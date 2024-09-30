@@ -15,12 +15,9 @@ def parse_datetime(value, format_str):
             # Parse the input date string to a datetime object
             parsed_datetime = timezone.make_aware(datetime.strptime(value, format_str))
         except ValueError:
-            return "Invalid date format."
+            return None  # Return None if parsing fails
 
     now = timezone.now()  # Get the current timezone-aware datetime
 
-    # Compare the parsed datetime with the current datetime
-    if now < parsed_datetime:
-        return "You still have a subscription."
-    else:
-        return "You are expired."
+    # Return True if the subscription is still valid, otherwise return False
+    return now < parsed_datetime
