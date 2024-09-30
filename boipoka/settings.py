@@ -27,9 +27,9 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG',default=False,cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1','boipokalibrarymangement-production.up.railway.app']
+ALLOWED_HOSTS = ['boipokalibrarymangement-production.up.railway.app','localhost', '127.0.0.1']
 
-CSRF_TRUSTED_ORIGINS=['https://boipokalibrarymangement-production.up.railway.app']
+CSRF_TRUSTED_ORIGINS = ['https://boipokalibrarymangement-production.up.railway.app']
 
 LOGIN_URL='/login/'
 LOGIN_REDIRECT_URL='/book_list/'
