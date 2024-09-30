@@ -1,0 +1,21 @@
+{% extends "boipoka_app\base.html" %}
+
+{% block content %}
+<div class=" absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl ">
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>  <!-- Display the error in red -->
+    {% endif %}
+
+    <form method="post" action="{% url 'boipoka_app:login' %}">
+        {% csrf_token %}
+        
+        <label for="username">Username:</label>
+        <input type="text" name="username" id="username" required class="rounded bg-gray-300 w-full py-1 px-3 !outline-none" placeholder="your_username">
+        
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" required class="rounded bg-gray-300 w-full py-1 px-3 !outline-none" placeholder="your_password">
+
+        <button type="submit" class="mt-5 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Login</button>
+    </form>
+</div>
+{% endblock %}

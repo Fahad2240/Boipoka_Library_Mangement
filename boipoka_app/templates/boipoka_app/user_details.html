@@ -1,0 +1,71 @@
+{% extends 'boipoka_app/base.html' %}
+{% block content %}
+<h2 class='text-white text-4xl text-center'>User Details</h2>
+<ul class=" mt-10  flex flex-col items-center justify-between gap-10">
+    {% if context.user  %}
+        <li class='text-xl bg-slate-600 rounded-sm px-10 py-10 font-bold'>
+            <h3 >UserName: <span class='font-bold '>{{ context.user.username }}<span></h3>
+            {% comment %} <pre>{{ context.user.subscription.subscription_type|default:"No user object available." }}</pre> {% endcomment %}
+            {% if context.subscription %}
+                <div class="flex flex-row gap-3 font-bold">
+                    <p>Subscription Type: {{ context.user.subscription.subscription_type }}</p>
+                    <form action="{% url 'boipoka_app:delete_subscription' pk=context.user.pk %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class=" px-2 py-1 bg-red-700 text-white ">Delete Subscription</button>
+                    </form>
+                </div>
+                <p>Maximum Books: {{ context.user.subscription.max_books }}</p>
+                <p>Subscription Starting Date: {{ context.user.subscription.subscription_start }}</p>
+                <form action="{% url 'boipoka_app:manage_subscriptions_starting' context.user.subscription.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="date" name="start-date" value="{{ context.user.subscription.subscription_start|date:'Y-m-d' }}" required>
+                    <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription Start Date</button>
+                </form>
+                <p>Subscription Ending Date: {{context.user.subscription.subscription_end }}</p>
+                <form action="{% url 'boipoka_app:manage_subscriptions_ending' context.user.subscription.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="date" name="expire-date" value="{{ context.user.subscription.subscription_end |date:'Y-m-d' }}" required>
+                    <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription End Date</button>
+                </form>
+                <p>Borrowed Books:</p>
+                <ul class=" font-bold ">
+                    {% for borrowing in context.borrowings %}
+                       <div class="flex flex-row items-center gap-5">
+                            <li>{{ borrowing.book.title }} - Due: {{ borrowing.due_date }} {% if borrowing.returned_at %}(Returned){% else %}(Not Returned){% endif %}
+                            <form action="{% url 'boipoka_app:update_due_date' borrowing.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="date" name="due_date" value="{{ borrowing.due_date|date:'Y-m-d' }}" required>
+                                <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
+                            </form>
+                            </li>
+                       </div>
+                    {% endfor %}
+                </ul>
+                {% if context.overdue_books %}
+                    <p>Overdue Books:</p>
+                    <ul class="text-white font-bold ">
+                        {% for overdue in context.overdue_books %}
+                            <li>{{ overdue.book.title }} - Due: {{ overdue.due_date }}</li>
+                            <form action="{% url 'boipoka_app:send_reminder' context.user.pk %}" method="post" >
+                                {% csrf_token %}
+                                <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Reminder</button>
+                            </form>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class='mt-6 flex flex-row justify-between gap-4'>
+                    <button><a href="{% url 'boipoka_app:edit_user' pk=context.user.pk %}" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Edit User</a></button>
+                    <form action="{% url 'boipoka_app:delete_user' pk=context.user.pk %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class=" px-3 py-2 bg-red-700 text-white font-semibold">Delete User</button>
+                    </form>
+                </div>
+            {% else %}
+            <p>No Subscription</p>
+            {% endif %}
+
+        </li>
+    {% endif %}
+</ul>
+<button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:users' %}">Back to UserLists</a></button>
+{% endblock %}

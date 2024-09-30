@@ -1,0 +1,11 @@
+{% extends 'boipoka_app/base.html' %}
+{% block title %}Create Subscription{% endblock title %}
+{% block content %}
+<div class="absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Render the form fields -->
+        <button type="submit" class="mt-5 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Choose Subscription</button>
+    </form>
+</div>
+{% endblock %}

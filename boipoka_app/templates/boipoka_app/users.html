@@ -1,0 +1,12 @@
+{% extends 'boipoka_app/base.html' %}
+{% block content %}
+<h2 class='text-white text-4xl text-center'>Users</h2>
+<ul class="mt-10 text-white font-bold flex flex-col items-center justify-between gap-10">
+    {% for user in users %}
+        <li class='text-2xl'>
+            <h3>UserName- <a href="{% url 'boipoka_app:user_details' pk=user.pk %}" class='bg-slate-700 px-3 py-2'>{{ user.username }}</a></h3>
+        </li>
+    {% endfor %}
+    <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to BookList</a></button>
+</ul>
+{% endblock %}

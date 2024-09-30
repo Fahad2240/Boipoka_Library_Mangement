@@ -1,0 +1,23 @@
+{% extends 'boipoka_app/base.html' %}
+{% block title %}Edit Book{% endblock title %}
+{% block content %}
+<h2 class='text-white font-bold text-2xl text-center'>Edit    <span class="text-orange-600"> {{ book.title }}<span></h2>.
+<div class='text-slate-300'>
+    <form method="POST" enctype="multipart/form-data" >
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="mt-5 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Save Changes</button>
+    </form>
+</div>
+
+
+
+{% if messages %}
+    <ul>
+    {% for message in messages %}
+        <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+
+{% endblock %}

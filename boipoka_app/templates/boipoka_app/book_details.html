@@ -1,0 +1,70 @@
+{% extends 'boipoka_app/base.html' %}
+{% block title %}Book Details{% endblock title %}
+{% block content %}
+
+<div class="mt-16 pt-14 grid grid-cols-6 gap-5 h-fit">
+    <div class="col-span-2 rounded">
+        <img src="{{ book.image.url }}" alt="{{ book.title }}">
+    </div>
+    <div class="col-span-4 p-5 bg-slate-500 rounded-xl text-dark">
+        <h1 class="mb-5 text-3xl">
+            <strong class="font-semibold">{{ book.title }}</strong>
+        </h1>
+        {% if book.description %}
+        <p class="text-xl">
+            <span>{{ book.description }}</span>
+        </p>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+            {% if subscription %}
+            <pre>{{ borrowed_books_count|default:"No user object available." }}</pre>
+                {% if subscription.max_books > borrowed_books_count %}  <!-- Using the count from Borrowing directly -->
+                    {% if not availability %}
+                        <div class="flex flex-row items-center justify-between gap-2">
+                            <button class="mt-5 bg-red-600  text-white">Unavaiable</button>
+                            <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'boipoka_app:book_details' book.pk %}">
+                                <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <form action="{% url 'boipoka_app:borrow_book' pk=book.pk %}" method="post">
+                            {% csrf_token %}
+                            <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" type="submit">Borrow Book</button>
+                        </form> 
+                    {% endif %}
+                {% else %}
+                    <p class="mt-5 text-red-600">Sorry, your borrowing limit is exceeded.</p> 
+                {% endif %}
+            {% else %}
+                {% if not user.is_superuser %}
+                    <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold">
+                        <a href="{% url 'boipoka_app:create-subscription' book.pk %}">Create Subscription</a>
+                    </button>
+                {% else %}
+                <div class="flex flex-row  gap-2 ">
+                    <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold">
+                        <a href="{% url 'boipoka_app:edit_book' book.pk %}">Edit</a>
+                    </button>
+                    <form action="{% url 'boipoka_app:delete_book' book.pk %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="mt-5 px-6 py-2 bg-red-900 font-semibold text-white">Delete</button>
+                    </form>
+                </div>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+        <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to BookList</a></button>
+        {% comment %} {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %} {% endcomment %}
+
+    </div>
+</div>
+{% endblock %}

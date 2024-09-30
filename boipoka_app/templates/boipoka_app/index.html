@@ -1,0 +1,11 @@
+{% extends 'boipoka_app\base.html' %} {% block title %}Home{% endblock %} 
+{% block content %}
+<div class="mt-5 flex flex-col justify-between  gap-12">
+    <h1 class="mt-36 text-center text-3xl text-white content-center">Welcome to Boipoka</h1>
+    <div class="flex content-center justify-between gap-6" style="left:20%;right:20%;margin:auto;">
+        <a href="{% url 'boipoka_app:register' %}" class=" font-bold text-lg  px-5 py-3 rounded-xl  text-white bg-green-800 hover:bg-green-900">Register</a>
+        <a href="{% url 'boipoka_app:login' %}" class="font-bold bg-purple-900 hover:bg-indigo-900 px-5 py-3 rounded-xl  text-white">Log In</a>
+    </div>
+</div>
+
+{% endblock %}

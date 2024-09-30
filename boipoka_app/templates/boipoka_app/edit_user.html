@@ -1,0 +1,19 @@
+{% extends 'boipoka_app/base.html' %}
+{% block content %}
+<h2 class='text-center text-3xl text-white'>Edit User: <span class='bg-slate-600'>{{ user.username }}<span></h2>
+<div class='flex flex-col items-center'>
+    <form method="post" class=' rounded w-1/2 px-10 py-5 bg-slate-300 mt-10 flex flex-col items-center  gap-2'>
+        {% csrf_token %}
+        <div class='flex flex-row gap-5'>
+            <label for="username" >Username:</label>
+            <input type="text" id="username" name="username" value="{{ user.username }}">
+        </div>
+        <div class="flex flex-row gap-5">
+            <label for="email" >Email:</label>
+            <input type="email" id="email" name="email" value="{{ user.email }}">
+        </div>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-semibold">Save Changes</button>
+    </form>
+</div>
+<button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:users' %}">Back to UserLists</a></button>
+{% endblock %}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}boipoka{% endblock %}</title>
+</head>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+{% load tz %}
+{% load parse_datetime %}
+{% comment %} {% load humanize %} {% endcomment %}
+<nav class="-mt-20 fixed  flex items-center w-full px-5 py-5 text-xl text-slate-200  gap-3 justify-center bg-slate-500">
+    <button  class="font-bold py-2 px-8 text-white hover:text-indigo-950 "><a href="{% url 'boipoka_app:book_list' %}">Home</a></button>
+    {% if request.user.subscription %}
+    {% timezone "Asia/Dhaka" %}
+    {% with subscription_endtime=request.user.subscription.subscription_end %}
+        {% with subscription_status=subscription_endtime|parse_datetime:"%b. %d, %Y, %I:%M %p" %}
+            <p>{{ subscription_status }}</p>
+        {% endwith %}
+    {% endwith %}
+    {% endtimezone %}
+    {% endif %}
+
+
+
+
+
+
+
+    <!-- Switch timezone to match the user's or the application's desired timezone -->
+    {% comment %} {% with subscription=request.user.subscription %}
+        {% timezone "Asia/Dhaka" %}
+            {% now "Y-m-d H:i:s" as now %}
+            {% if subscription.subscription_end < now %}
+                <span class="text-red-500 font-bold">Your subscription has expired.</span>
+                <button class="py-2 px-8 font-bold text-indigo-800 hover:text-indigo-950">
+                    <a href="{% url 'boipoka_app:renew_subscription' %}">Renew Subscription</a>
+                </button>
+            {% else %}
+                <span class="text-green-500 font-bold">Your subscription will end on {{ request.user.subscription.subscription_end}}</span>
+                <button class="py-2 px-8 font-bold text-indigo-800 hover:text-indigo-950">
+                    <a href="{% url 'boipoka_app:change_subscription' %}?next={{ request.path }}">Change Subscription</a>
+                </button>
+            {% endif %}
+        {% endtimezone %}
+    {% endwith %} 
+{% endif %} {% endcomment %}
+
+    {% if request.user.is_authenticated %} 
+        <form method="post" action="{% url 'boipoka_app:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-2 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Log Out</button>
+        </form>
+        {% if request.user.is_superuser %}
+        <button class=" px-6 py-2 bg-slate-700 text-white font-semibold">
+            <a href="{% url 'boipoka_app:add_book' %}">+Add a New Book</a>
+        </button>
+        <button class=" px-6 py-2 bg-cyan-800 text-white font-semibold">
+            <a href="{% url 'boipoka_app:users' %}">Handle User</a>
+        </button>
+        {% endif %}
+    {% endif %}
+</nav>
+
+<body class='bg-gray-900'>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>

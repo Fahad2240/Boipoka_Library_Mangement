@@ -1,0 +1,21 @@
+{% extends 'boipoka_app/base.html' %}
+{% block title %}Create Subscription{% endblock title %}
+{% block content %}
+<div class="absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl">
+    <form method="post" class="bg-gray-100 p-6 rounded-lg shadow-md">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+        <select name="subscription_type" id="subscription_type" class="block w-full px-4 py-2 mb-4 border rounded-md">
+            {% for value, label in tier_choices %}
+            <option value="{{ value }}" {% if subscription.subscription_type == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" class="mt-4 px-4 py-2 bg-blue-600 text-white font-semibold">
+            Save Subscription
+        </button>
+    </form>
+</div>
+{% endblock %}

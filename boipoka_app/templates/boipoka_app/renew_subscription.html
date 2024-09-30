@@ -1,0 +1,17 @@
+{% extends 'boipoka_app/base.html' %}
+
+{% block title %}Renew Subscription{% endblock %}
+
+{% block content %}
+<div class="flex  justify-center items-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-xl font-bold mb-4">Renew Your Subscription</h1>
+        <p>Your current subscription ends on: {{ subscription.subscription_end }}</p>
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Renew for 30 Days</button>
+        </form>
+        <a href="{% url 'boipoka_app:book_list' %}" class="text-blue-500">Back to Book List</a>
+    </div>
+</div>
+{% endblock %}
