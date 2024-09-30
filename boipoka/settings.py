@@ -106,8 +106,9 @@ if DEBUG:
     
     
     
-DATABASES ={
-    'default': dj_database_url.config(default=config('DATABASE_URL'))
+else: 
+    DATABASES ={
+        'default': dj_database_url.config(default=config('DATABASE_URL'))
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME': 'railway',  # Database name you created
