@@ -4,29 +4,24 @@
 <div class=" absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl ">
     <form method="post" action=".">
         {% csrf_token %}
-        <!-- {{form.as_p}} -->
         <div class="mb-3">
             <label placeholder="add_your_name" class="inline-block mb-2 ">Username</label>
             <br>
-            <!-- <input placeholder="your_name" class="rounded border-black-200 w-1/2 py-1 px-3" id="your_name" type="text" name="your_name" maxlength="100" required> -->
             {{form.username}}
         </div>
         <div class="mb-3">
             <label placeholder="add_your_email" class="inline-block mb-2 ">Email</label>
             <br>
-            <!-- <input placeholder="add_your_email" class="rounded border-black-200 w-1/2 py-1 px-3" id="your_name" type="text" name="your_email" maxlength="100" required> -->
             {{form.email}}
         </div>
         <div class="mb-3">
             <label placeholder="add_your_password" class="inline-block mb-2 ">Password</label>
             <br>
-            <!-- <input placeholder="password" class="rounded border-black-200 w-1/2 py-1 px-3" id="your_name" type="text" name="Password1" maxlength="100" required> -->
             {{form.password1}}
         </div>
         <div class="mb-3">
             <label class="inline-block mb-2 rounded" placeholder="confirm_your_password">Confirm Password</label>
             <br>
-            <!-- <input placeholder="confirm_password" id="your_name " type="text" name="Password2 maxlength="100" class="w-1/2 py-1 px-3 rounded mb-6 border-black-200" required> -->
             {{form.password2}}
         </div>
         {% if form.errors or form.non_field_errors %}

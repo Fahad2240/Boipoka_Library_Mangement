@@ -11,24 +11,16 @@
 
 {% load tz %}
 {% load parse_datetime %}
-{% comment %} {% load humanize %} {% endcomment %}
 <nav class="-mt-20 fixed  flex items-center w-full px-5 py-5 text-xl text-slate-200  gap-3 justify-center bg-slate-500">
     <button  class="font-bold py-2 px-8 text-white hover:text-indigo-950 "><a href="{% url 'boipoka_app:book_list' %}">Home</a></button>
     {% if request.user.subscription %}
-    {% comment %} {% timezone "Asia/Dhaka" %}
-    {% with subscription_endtime=request.user.subscription.subscription_end %}
-        {% with subscription_status=subscription_endtime|parse_datetime:"%b. %d, %Y, %I:%M %p" %}
-            <p>{{ subscription_status }}</p>
-        {% endwith %}
-    {% endwith %}
-    {% endtimezone %}
-    {% endif %} {% endcomment %}
 
         {% with subscription=request.user.subscription %}
             {% timezone "Asia/Dhaka" %}
             {% with subscription_endtime=request.user.subscription.subscription_end %}
                 {% with subscription_status=subscription_endtime|parse_datetime:"%b. %d, %Y, %I:%M %p" %}
                     {% if subscription_status %}
+                        <span class="text-indigo-950 font-bold">Your are a {{ request.user.subscription.subscription_type }} member</span>
                         <span class="text-green-500 font-bold">Your subscription will end on {{ request.user.subscription.subscription_end }}</span>
                         <button class="py-2 px-8 font-bold text-indigo-800 hover:text-indigo-950">
                             <a href="{% url 'boipoka_app:change_subscription' %}?next={{ request.path }}">Change Subscription</a>

@@ -5,7 +5,6 @@
     {% if context.user  %}
         <li class='text-xl bg-slate-600 rounded-sm px-10 py-10 font-bold'>
             <h3 >UserName: <span class='font-bold '>{{ context.user.username }}<span></h3>
-            {% comment %} <pre>{{ context.user.subscription.subscription_type|default:"No user object available." }}</pre> {% endcomment %}
             {% if context.subscription %}
                 <div class="flex flex-row gap-3 font-bold">
                     <p>Subscription Type: {{ context.user.subscription.subscription_type }}</p>
@@ -28,9 +27,9 @@
                     <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription End Date</button>
                 </form>
                 <p>Borrowed Books:</p>
-                <ul class=" font-bold ">
+                <ul class="text-slate-300 font-bold ">
                     {% for borrowing in context.borrowings %}
-                       <div class="flex flex-row items-center gap-5">
+                    <div class="flex flex-row items-center gap-5">
                             <li>{{ borrowing.book.title }} - Due: {{ borrowing.due_date }} {% if borrowing.returned_at %}(Returned){% else %}(Not Returned){% endif %}
                             <form action="{% url 'boipoka_app:update_due_date' borrowing.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}
@@ -38,7 +37,7 @@
                                 <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
                             </form>
                             </li>
-                       </div>
+                    </div>
                     {% endfor %}
                 </ul>
                 {% if context.overdue_books %}

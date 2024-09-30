@@ -1,6 +1,5 @@
 from datetime import datetime
 import logging
-from django import template
 from smtplib import SMTPException
 import threading
 from django.shortcuts import get_object_or_404, render,redirect
@@ -17,30 +16,6 @@ from django.core.files.base import ContentFile
 from urllib.parse import urlparse
 from django.contrib.auth import get_user_model
 
-
-# Create your views here.
-
-# @login_required
-# def your_view(request):
-#     current_time = timezone.now()  # No need to convert to datetime again
-#     subscription_expired = False
-
-#     # Get the current user
-#     user = get_object_or_404(User, pk=request.user.pk)
-#     subscription = get_object_or_404(Subscription, user=user)
-
-#     if subscription:
-#         # Compare subscription_end with current_time
-#         if subscription.subscription_end < current_time:
-#             subscription_expired = True  # Set flag if subscription expired
-
-#     passe = {
-#         'subscription_expired': subscription_expired,
-#         'current_time': current_time,
-#     }
-
-#     # Pass the flag and time to the template
-#     return render(request, 'boipoka_app/base.html', passe)
 def index(request):
     return render(request,'boipoka_app/index.html')
 
