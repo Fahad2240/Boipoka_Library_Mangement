@@ -9,7 +9,9 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os 
+import django_heroku
+import dj_database_url
 from pathlib import Path
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG',cast=bool)
+DEBUG = config('DEBUG',default=False,cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -49,6 +51,7 @@ TAILWIND_APP_NAME='theme'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -87,17 +90,33 @@ DEFAULT_FROM_EMAIL = "fahadish861@gmail.com"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',  # Database name you created
-        'USER': 'postgres',       # Username you created or 'postgres'
-        'PASSWORD': 'admin',   # Password for the user
-        'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
-        'PORT': '5432',     
-    }
-}
+if DEBUG:
+    
 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',  # Database name you created
+            'USER': 'postgres',       # Username you created or 'postgres'
+            'PASSWORD': 'admin',   # Password for the user
+            'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
+            'PORT': '5432',     
+        }
+    }
+    
+    
+    
+DATABASES ={
+    'default': dj_database_url.config(default=config('DATABASE_URL'))
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'railway',  # Database name you created
+    #     'USER': 'postgres',       # Username you created or 'postgres'
+    #     'PASSWORD': 'xpFpntIAtcXRaFKdhkChyGSNUKQpFGHA',   # Password for the user
+    #     'HOST': 'postgres-j0ir.railway.internal',           # Or the IP address of your PostgreSQL server (default: localhost)
+    #     'PORT': '5432',     
+    # }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -135,6 +154,7 @@ TIME_ZONE = 'Asia/Dhaka'  # e.g., 'Asia/Dhaka'
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL='media/'
 MEDIA_ROOT=BASE_DIR/'media'
 # Default primary key field type
@@ -143,3 +163,6 @@ MEDIA_ROOT=BASE_DIR/'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY')
+
+
+django_heroku.settings(locals())

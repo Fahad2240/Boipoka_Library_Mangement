@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.core.mail import EmailMessage
 import logging
 from smtplib import SMTPException
 import threading
@@ -337,15 +338,18 @@ def update_due_date(request, pk):
 
 logger = logging.getLogger(__name__)
 
-def send_email_threaded(subject: str, message: str, sender_email: str, toaddr: list):
-    """Send emails asynchronously in a separate thread."""
+def send_email_threaded(subject: str, message: str, sender_email: str, toaddr: list, reply_to: list = None):
+    """Send emails asynchronously in a separate thread with a reply-to address."""
     try:
-        send_mail(
-            subject,
-            message,
-            sender_email,
-            toaddr,
+        # Create an EmailMessage instance
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=sender_email,
+            to=toaddr,
+            reply_to=reply_to  # Adding reply_to field here
         )
+        email.send(fail_silently=False)  # Send the email
         logger.info(f"Email sent to {toaddr} with subject: '{subject}'")
     except SMTPException as e:
         logger.error(f"Failed to send email: {str(e)}")
@@ -387,11 +391,11 @@ def send_reminder(request, pk):
             f'Penalty for overdue: {penalty} tk (based on your {subscription.subscription_type} subscription).\n\n'
         )
         recipient_list = [borrowing.user.email]
-
+        reply_to_address = ['boipoka_admin@boipoka.com']
         # Create a separate thread to send the email
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
         )
         separate_thread.start()
 
