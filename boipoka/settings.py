@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG',default=False,cast=bool)
+DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ['boipokalibrarymangement-production.up.railway.app','localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = ['https://boipokalibrarymangement-production.up.railway.app']
 
@@ -92,25 +92,30 @@ DEFAULT_FROM_EMAIL = "fahadish861@gmail.com"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if DEBUG:
+# if DEBUG:
     
 
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'postgres',  # Database name you created
-            'USER': 'postgres',       # Username you created or 'postgres'
-            'PASSWORD': 'admin',   # Password for the user
-            'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
-            'PORT': '5432',     
-        }
-    }
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': 'postgres',  # Database name you created
+#             'USER': 'postgres',       # Username you created or 'postgres'
+#             'PASSWORD': 'admin',   # Password for the user
+#             'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
+#             'PORT': '5432',     
+#         }
+#     }
     
     
     
-else: 
-    DATABASES ={
-        'default': dj_database_url.config(default=config('DATABASE_URL'))
+# Replace the SQLite DATABASES configuration with PostgreSQL:
+DATABASES = {
+    'default': dj_database_url.config(
+        # Replace this value with your local database's connection string.
+        default=os.environ.get('DATABASES'),
+        conn_max_age=600
+    )
+}
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME': 'railway',  # Database name you created
@@ -119,7 +124,7 @@ else:
     #     'HOST': 'postgres-j0ir.railway.internal',           # Or the IP address of your PostgreSQL server (default: localhost)
     #     'PORT': '5432',     
     # }
-}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -157,7 +162,13 @@ TIME_ZONE = 'Asia/Dhaka'  # e.g., 'Asia/Dhaka'
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+if not DEBUG:
+    # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    # Enable the WhiteNoise storage backend, which compresses static files to reduce disk use
+    # and renames the files with unique names for each version to support long-term caching
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
 MEDIA_URL='media/'
 MEDIA_ROOT=BASE_DIR/'media'
 # Default primary key field type
