@@ -18,7 +18,6 @@
 
         {% if user.is_authenticated %}
             {% if subscription %}
-            <pre>{{ borrowed_books_count|default:"No user object available." }}</pre>
                 {% if subscription.max_books > borrowed_books_count %}  <!-- Using the count from Borrowing directly -->
                     {% if not availability %}
                         <div class="flex flex-row items-center justify-between gap-2">
@@ -56,15 +55,6 @@
                 {% endif %}
             {% endif %}
         {% endif %}
-        <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to BookList</a></button>
-        {% comment %} {% if messages %}
-            <ul>
-            {% for message in messages %}
-                <li>{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %} {% endcomment %}
-
     </div>
 </div>
 {% endblock %}
