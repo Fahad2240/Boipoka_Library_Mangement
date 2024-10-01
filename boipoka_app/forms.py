@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from boipoka_app.models import Borrowing, Subscription,Book
 
-FROM_INPUT_CLASSES='text-slate-300 w-full px-5 py-3 rounded-xl border'
+FROM_INPUT_CLASSES='text-slate-300 w-full px-5 py-3  rounded-xl border'
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta:

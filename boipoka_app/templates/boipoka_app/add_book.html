@@ -1,18 +1,12 @@
 {% extends 'boipoka_app/base.html' %}
 {% block title %}Add New Book{% endblock title %}
 {% block content %}
-<h2 class='text-white font-bold text-2xl'>Add New Book</h2>
+<h2 class='text-white font-bold text-2xl text-center'>Add New Book</h2>
 <form method="POST" enctype="multipart/form-data" class="text-white">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="mt-5 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Add Book</button>
+    <button type="submit" class="mt-5 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl  text-white">Add Book</button>
 </form>
-{% if messages %}
-    <ul>
-    {% for message in messages %}
-        <li>{{ message }}</li>
-    {% endfor %}
-    </ul>
-{% endif %}
+
 
 {% endblock %}
