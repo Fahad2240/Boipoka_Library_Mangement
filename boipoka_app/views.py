@@ -69,7 +69,7 @@ def fetch_books_data(start_index=0, max_results=10):
 def create_books_in_db(book_list):
     for book_data in book_list:
         # Create or update the Book instance in the database
-        Book.objects.update_or_create(
+        Book.objects.get_or_create(
             title=book_data['title'],
             defaults={
                 'author': book_data['author'],
@@ -84,7 +84,7 @@ def create_books_in_db(book_list):
 @login_required
 def book_list(request):
     # Retrieve all available books
-    books = Book.objects.filter(available_copies__gt=0)  # Get books that are available
+    books = Book.objects.filter(available_copies__gte=0)  # Get books that are available
     book_availability = {}
     create_books_in_db(fetch_books_data(0,10))
     for book in books:
@@ -171,9 +171,11 @@ def borrow_book(request, pk):
     subscription = get_user_subscription(request.user)  # Ensure this retrieves the correct subscription
     
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
-    
+    print(borrowed_books_count)
+    print(subscription.max_books)
     # Check subscription and borrowing limits
     if borrowed_books_count == subscription.max_books:
+        # borrowed_books_count+=1
         messages.error(request, "Sorry, you have reached the limit of borrowed books for your subscription.")
         return redirect('boipoka_app:book_details', pk=book.pk)
 
@@ -321,17 +323,26 @@ def user_details(request,pk):
 def update_due_date(request, pk):
     """Update the due date of a specific borrowing."""
     borrowing = get_object_or_404(Borrowing, pk=pk)
-    user=borrowing.user
+    user = borrowing.user
+    
     if request.method == 'POST':
         new_due_date_str = request.POST.get('due_date')
-        new_due_date = datetime.strptime(new_due_date_str, '%Y-%m-%d')  # Adjust the format to match your input format
-        # If the due_date is naive (without timezone info), mak it timezone-aware
+        # print(new_due_date_str)  # Debug: print the due date string received
+
+        # Parse the incoming date string in the format "2024-09-02T20:27"
+        new_due_date = datetime.strptime(new_due_date_str, '%Y-%m-%dT%H:%M')
+        
+        # If the new due date is naive (without timezone info), make it timezone-aware
         if timezone.is_naive(new_due_date):
             new_due_date = timezone.make_aware(new_due_date, timezone.get_current_timezone())
+        
+        # Update the borrowing due date and save
         borrowing.due_date = new_due_date
         borrowing.save()
         
         messages.success(request, f'Due date for "{borrowing.book.title}" updated successfully.')
+    
+    return redirect('boipoka_app:user_details', pk=user.pk)
         # return redirect('boipoka_app:user_details', pk=borrowing.user.pk)
 
     return redirect('boipoka_app:user_details', pk=user.pk)
@@ -433,7 +444,7 @@ def manage_subscriptions_starting(request,pk):
     user=subscription.user
     if request.method == 'POST':
         new_subscription_startdate_str = request.POST.get('start-date')
-        new_subscription_startdate = datetime.strptime(new_subscription_startdate_str, '%Y-%m-%d')  # Adjust the format to match your input format
+        new_subscription_startdate = datetime.strptime(new_subscription_startdate_str, '%Y-%m-%dT%H:%M')  # Adjust the format to match your input format
         # If the due_date is naive (without timezone info), mak it timezone-aware
         if timezone.is_naive(new_subscription_startdate):
             new_subscription_startdate = timezone.make_aware(new_subscription_startdate, timezone.get_current_timezone())
@@ -446,7 +457,7 @@ def manage_subscriptions_ending(request,pk):
     user=subscription.user
     if request.method == 'POST':
         new_subscription_enddate_str = request.POST.get('expire-date')
-        new_subscription_enddate = datetime.strptime(new_subscription_enddate_str, '%Y-%m-%d')  # Adjust the format to match your input format
+        new_subscription_enddate = datetime.strptime(new_subscription_enddate_str, '%Y-%m-%dT%H:%M')  # Adjust the format to match your input format
         # If the due_date is naive (without timezone info), mak it timezone-aware
         if timezone.is_naive( new_subscription_enddate):
             new_subscription_enddate = timezone.make_aware(new_subscription_enddate, timezone.get_current_timezone())
