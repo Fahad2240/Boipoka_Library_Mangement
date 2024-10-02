@@ -52,17 +52,17 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
-                <div class='mt-6 flex flex-row justify-between gap-4'>
-                    <button><a href="{% url 'boipoka_app:edit_user' pk=context.user.pk %}" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Edit User</a></button>
-                    <form action="{% url 'boipoka_app:delete_user' pk=context.user.pk %}" method="post" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class=" px-3 py-2 bg-red-700 text-white font-semibold">Delete User</button>
-                    </form>
-                </div>
+                
             {% else %}
             <p>No Subscription</p>
             {% endif %}
-
+            <div class='mt-6 flex flex-row justify-between gap-4'>
+                <button><a href="{% url 'boipoka_app:edit_user' pk=context.user.pk %}" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Edit User</a></button>
+                <form action="{% url 'boipoka_app:delete_user' pk=context.user.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class=" px-3 py-2 bg-red-700 text-white font-semibold">Delete User</button>
+                </form>
+            </div>
         </li>
     {% endif %}
 </ul>
