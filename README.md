@@ -115,5 +115,23 @@ The Boipoka application is designed to facilitate the management of a library sy
 **Bonus Features:**
 - Integrate Google Books API for enhanced book details.
 
-      						
+## Development Guide
+
+### Prerequisites
+- Python 3.11.7
+- Django 5.1.1
+- PostgreSQL 17
+- Virtualenv (recommended)
+
+### Installation Instructions
+1. **Clone the Repository**:
+   ```bash
+   git clone [https://github.com/Fahad2240/Boipoka_Library_Mangement]
+   cd Boipoka_Library_Mangement
+
+2. **Set Up a Virtual Environment**
+```
+python -m venv venv
+venv/bin/activate 
+```
       						
