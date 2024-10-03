@@ -448,11 +448,12 @@ def delete_subscription(request, pk):
     for borrowed in borrowed_books:
         # Retrieve the book
         book = get_object_or_404(Book, pk=borrowed.book.pk)
+        print(f"Current available copies for {book.title}: {book.available_copies}")
         # Increment the available copies
         book.available_copies += 1
         # Save the updated book
         book.save()
-
+        print(f"Updated available copies for {book.title}: {book.available_copies}")
     # Delete the subscription
     subscription.delete()
 
