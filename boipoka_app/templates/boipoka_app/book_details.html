@@ -57,8 +57,8 @@
                 {% endif %}
                 
                 {% if is_borrowed %}
-                    <pre>{{is_borrowed.due_date}}</pre>
-                    <p class='font-bold text-orange-500'>You have to return this book till {{is_borrowed.due_date}} to borrow this again </p>
+                    {% comment %} <p>{{is_borrowed.due_date}}</p> {% endcomment %}
+                    <p class='font-bold text-orange-500'>You have to return this book till {{book_due_info}} to borrow this again </p>
                     {% else %}
                     <p class='font-bold text-red-500'>It is error </p>
                 {% endif %}

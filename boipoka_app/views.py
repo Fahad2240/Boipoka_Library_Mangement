@@ -104,9 +104,15 @@ def book_details(request, pk):
     
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
+    if is_borrowed:
+        borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True)
+        if borrowing_record:
+            book_due_info = borrowing_record.due_date
+        else:
+            book_due_info = None  # Or handle the case where no borrowing record is found
 
     # Get user's subscription information
-    subscription = Subscription.objects.filter(user=request.user).first()
+    # subscription = Subscription.objects.filter(user=request.user).first()
 
     # Determine availability: A book is available if it is not borrowed by the user
     availability = not is_borrowed 
@@ -116,7 +122,8 @@ def book_details(request, pk):
         'borrowed_books_count': borrowed_books_count,
         'subscription': subscription,
         'availability': availability,
-        'is_borrowed': is_borrowed
+        'is_borrowed': is_borrowed,
+        'book_due_info': book_due_info
     }
     return render(request, 'boipoka_app/book_details.html', context)
 

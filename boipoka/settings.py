@@ -92,31 +92,30 @@ DEFAULT_FROM_EMAIL = "fahadish861@gmail.com"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# if DEBUG:
-    
-
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': 'postgres',  # Database name you created
-#             'USER': 'postgres',       # Username you created or 'postgres'
-#             'PASSWORD': 'admin',   # Password for the user
-#             'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
-#             'PORT': '5432',     
-#         }
-#     }
-    
-    
-    
-# Replace the SQLite DATABASES configuration with PostgreSQL:
-DATABASES = {
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',  # Database name you created
+            'USER': 'postgres',       # Username you created or 'postgres'
+            'PASSWORD': 'admin',   # Password for the user
+            'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
+            'PORT': '5432',     
+        }
+    }
+else:   
+    DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
         default=os.environ.get('DATABASES'),
         conn_max_age=600
-    )
-}
-    # 'default': {
+        )
+    }
+
+    
+    
+# Replace the SQLite DATABASES configuration with PostgreSQL:
+  # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME': 'railway',  # Database name you created
     #     'USER': 'postgres',       # Username you created or 'postgres'
