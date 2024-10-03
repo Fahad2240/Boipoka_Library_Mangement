@@ -28,6 +28,7 @@ urlpatterns = [
     path('user/delete_subscription/<int:pk>/', views.delete_subscription, name='delete_subscription'),
     path('manage_subscriptions_starting/<int:pk>/', views.manage_subscriptions_starting, name='manage_subscriptions_starting'),
     path('manage_subscriptions_ending/<int:pk>/', views.manage_subscriptions_ending, name='manage_subscriptions_ending'),
+    path('user/delete_subscription/<int:pk>/', views.delete_subscription, name='delete_subscription'),
     # path('book_details/<int:pk>', views.book_details, name='book_details'),
     # path('add_book/', views.add_book, name='add_book'),
 ]
