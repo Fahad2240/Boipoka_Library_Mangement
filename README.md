@@ -6,14 +6,14 @@ The Boipoka application is designed to facilitate the management of a library sy
 
 
 # 2. Setup Instructions
-   a. Install python-3.11.7
-   b. git clone https://github.com/Fahad2240/Boipoka_Library_Mangement
+   a. **Install python-3.11.7**
+   b. **git clone https://github.com/Fahad2240/Boipoka_Library_Mangement**
     then run the followings in the project directory which is fetched from github
    c. run the build.sh as chmod a+x build.sh if you are in Windows then go to GitBash 
 	and run assuming your project in this directory
-		cd /c/Users/User/Desktop/Book_Library_System
-	then    ./build.sh
-	then   	chmod a+x build.sh				
+		**cd /c/Users/User/Desktop/Book_Library_System**
+	then    **./build.sh**
+	then   	**chmod a+x build.sh**				
 	  					
 	    				       ### Cloud Setup Instructions (Render PostgreSQL)
 1. **Database URL**: Your Django project should already have a `DATABASE_URL` environment variable set up on Render's dashboard. The `DATABASE_URL` contains all the necessary connection info to your PostgreSQL database.
