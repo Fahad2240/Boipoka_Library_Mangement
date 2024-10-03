@@ -59,8 +59,8 @@
                 {% if is_borrowed %}
                     {% comment %} <p>{{is_borrowed.due_date}}</p> {% endcomment %}
                     <p class='font-bold text-orange-500'>You have to return this book till {{book_due_info}} to borrow this again </p>
-                    {% else %}
-                    <p class='font-bold text-red-500'>It is error </p>
+                {% else %}
+                <p class='font-bold text-red-500'>It is error </p>
                 {% endif %}
             {% endif %}
             <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to Booklists</a></button>
