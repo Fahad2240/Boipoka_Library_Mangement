@@ -18,8 +18,8 @@
 
         {% if user.is_authenticated %}
             {% if subscription %}
-                <pre class='font-bold'>Maximum Limit of Books: {{subscription.max_books}} </pre>
-                <pre class='font-bold'>Borrowed Books Count : {{ borrowed_books_count }}</pre>
+                <p class='font-bold'>You can borrow maximut  {{subscription.max_books}} books at once </p>
+                <p class='font-bold'>Your have already borrowed  {{ borrowed_books_count }} books </p>
                 {% if subscription.max_books > borrowed_books_count %}  <!-- Using the count from Borrowing directly -->
                     {% if not availability %}
                         <div class="flex flex-row items-center justify-between gap-2">
