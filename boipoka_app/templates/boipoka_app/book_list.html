@@ -7,47 +7,47 @@
 
 <h2 class="p-3 mt-20 mb-8 text-slate-300 text-center text-3xl ">Available Books</h2>
 
-{% if books %}
-    <div class="mt-10 w-full h-full rounded-3xl grid grid-cols-4 items-center text-slate-300 gap-3">
-        {% for book in books %}
-            <div class="flex flex-col justify-around items-center ">
-                <div>
-                    {% if book_availability|get_item:book.pk %}
-                        <a href="{% url 'boipoka_app:book_details' book.id %}">
-                            <img src="{{ book.image.url }}" alt="" class="w-56 h-56 ">
-                        </a>
-                    {% else %}
-                        <a disabled>
-                            <img src="{{ book.image.url }}" alt="" class="w-56 h-56 ">
-                        </a>
-                    {% endif %}
-                </div>
-                <div>
-                    <h1 class="text-dark mx-20 text-xl">{{ book.title }}</h1>
-                </div>
-                <div>
-                    <p class="text-dark mx-20">{{ book.author }}</p>
-                </div>
-                {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription %}
-                    <div class="flex flex-row items-center justify-between gap-2">
-                        <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
-                        <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
-                        </form>
+    {% if books %}
+        <div class="mt-10 w-full h-full rounded-3xl grid grid-cols-4 items-center text-slate-300 gap-3">
+            {% for book in books %}
+                <div class="flex flex-col justify-around items-center ">
+                    <div>
+                        {% if book_availability|get_item:book.pk %}
+                            <a href="{% url 'boipoka_app:book_details' book.id %}">
+                                <img src="{{ book.image.url }}" alt="" class="w-56 h-56 ">
+                            </a>
+                        {% else %}
+                            <a disabled>
+                                <img src="{{ book.image.url }}" alt="" class="w-56 h-56 ">
+                            </a>
+                        {% endif %}
                     </div>
-                {% endif %}
-                <div>
-                    {% if book.available_copies > 0 %}
-                        <p class="rounded font-bold text-dark bg-green-950 p-2 text-center">Remaining - {{ book.available_copies }}</p>
-                    {% else %}
-                        <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Out of Stock</p>
+                    <div>
+                        <h1 class="text-dark mx-20 text-xl">{{ book.title }}</h1>
+                    </div>
+                    <div>
+                        <p class="text-dark mx-20">{{ book.author }}</p>
+                    </div>
+                    {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription %}
+                        <div class="flex flex-row items-center justify-between gap-2">
+                            <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
+                            <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
+                            </form>
+                        </div>
                     {% endif %}
+                    <div>
+                        {% if book.available_copies > 0 %}
+                            <p class="rounded font-bold text-dark bg-green-950 p-2 text-center">Remaining - {{ book.available_copies }}</p>
+                        {% else %}
+                            <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Out of Stock</p>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-        {% endfor %}
-    </div> 
-{% else %}
-    <p>No books available at the moment.</p>
-{% endif %}
+            {% endfor %}
+        </div> 
+    {% else %}
+        <p>No books available at the moment.</p>
+    {% endif %}
 {% endblock %}
