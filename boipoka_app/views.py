@@ -443,7 +443,19 @@ def delete_user(request, pk):
 def delete_subscription(request, pk):
     user = get_object_or_404(User, pk=pk)
     subscription = get_object_or_404(Subscription, user=user)
+    # Get all borrowed books for the user
+    borrowed_books = Borrowing.objects.filter(user=user)
+    for borrowed in borrowed_books:
+        # Retrieve the book
+        book = get_object_or_404(Book, pk=borrowed.book.pk)
+        # Increment the available copies
+        book.available_copies += 1
+        # Save the updated book
+        book.save()
+
+    # Delete the subscription
     subscription.delete()
+
     
     return redirect('boipoka_app:user_details',pk=user.pk)
 
