@@ -105,7 +105,7 @@ def book_details(request, pk):
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
     if is_borrowed:
-        borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True)
+        borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).first()
         if borrowing_record:
             book_due_info = borrowing_record.due_date
 
