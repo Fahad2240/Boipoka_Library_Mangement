@@ -90,7 +90,7 @@ def book_list(request):
     for book in books:
         # Check if the user has borrowed this book
         is_borrowed = Borrowing.objects.filter(user=request.user, book=book).exists()
-        book_availability[book.pk] = not is_borrowed  and book.available_copies > 0# True if available
+        book_availability[book.pk] = not is_borrowed  or book.available_copies > 0# True if available
     
     return render(request, 'boipoka_app/book_list.html', {'books': books, 'book_availability': book_availability})
 
