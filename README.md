@@ -11,8 +11,8 @@ The Boipoka application is designed to facilitate the management of a library sy
     then run the followings in the project directory which is fetched from github
    c. run the build.sh as chmod a+x build.sh if you are in Windows then go to GitBash 
 	and run assuming your project in this directory
- 	```
-	cd /c/Users/User/Desktop/Book_Library_System
+ 	```bash
+  	cd /c/Users/User/Desktop/Book_Library_System
 	./build.sh
 	chmod a+x build.sh			
 	```  					
