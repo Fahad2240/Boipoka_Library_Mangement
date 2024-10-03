@@ -80,27 +80,34 @@ The Boipoka application is designed to facilitate the management of a library sy
      ```bash
      python manage.py runserver
      ```
+     
 # 3. Key Features
 
 **User Authentication & Role Management:**
--User registration and login functionality.
--Two roles: Admin and Regular Users.
--Password hashing for security.
+- User registration and login functionality.
+- Two roles: Admin and Regular Users.
+- Password hashing for security.
+
 **Subscription Management:**
--Three subscription tiers: Basic, Premium, VIP.
--Users can upgrade or downgrade subscriptions.
--Manage subscription expiry and renewals.
+- Three subscription tiers: Basic, Premium, VIP.
+- Users can upgrade or downgrade subscriptions.
+- Manage subscription expiry and renewals.
+
 **Content Management (Books):**
--Admins can manage book entries (CRUD operations).
--Use Google Books API to automatically fetch book metadata.
+- Admins can manage book entries (CRUD operations).
+- Use Google Books API to automatically fetch book metadata.
+
 **Borrowing System:**
--Users can borrow books based on their subscription level.
--Implement due dates and overdue management.
--Admins can view overdue books and manage penalties.
+- Users can borrow books based on their subscription level.
+- Implement due dates and overdue management.
+- Admins can view overdue books and manage penalties.
+
 **Book Availability:**
--Only books that are not borrowed are available for borrowing.
--Change book status based on borrowing actions.
+- Only books that are not borrowed are available for borrowing.
+- Change book status based on borrowing actions.
+
 **Bonus Features:**
--Integrate Google Books API for enhanced book details.
+- Integrate Google Books API for enhanced book details.
+
       						
       						
