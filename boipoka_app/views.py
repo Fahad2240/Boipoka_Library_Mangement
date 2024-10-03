@@ -391,7 +391,7 @@ def send_reminder(request, pk):
         # Prepare the email
         due_date = borrowing.due_date
         time_now = timezone.now()
-        difference = (time_now - due_date).days  # Calculate the difference in days
+        difference = (time_now - due_date).days+10  # Calculate the difference in days
         penalty = penalty_rate * difference if difference > 0 else 0  # Apply penalty only if overdue
         
         subject = f'Reminder: Overdue Book - {borrowing.book.title}'
