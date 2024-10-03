@@ -33,7 +33,7 @@ The Boipoka application is designed to facilitate the management of a library sy
           default='postgresql://postgres:postgres@localhost:5432/mysite',
           conn_max_age=600
        )
-    }
+     }
      ```
 3. **Deploying**: On Render, when you deploy your app, PostgreSQL will be automatically connected through the `DATABASE_URL` environment variable, so you don't need to configure anything further for cloud deployment.
 
