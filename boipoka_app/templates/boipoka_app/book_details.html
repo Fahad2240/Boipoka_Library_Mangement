@@ -18,7 +18,7 @@
 
         {% if user.is_authenticated %}
             {% if subscription %}
-                <p class='font-bold'>You can borrow maximut  {{subscription.max_books}} books at once </p>
+                <p class='font-bold'>You can borrow maximum  {{subscription.max_books}} books at once </p>
                 <p class='font-bold'>Your have already borrowed  {{ borrowed_books_count }} books </p>
                 {% if subscription.max_books > borrowed_books_count %}  <!-- Using the count from Borrowing directly -->
                     {% if not availability %}
@@ -54,6 +54,9 @@
                         <button type="submit" class="mt-5 px-6 py-2 bg-red-900 font-semibold text-white">Delete</button>
                     </form>
                 </div>
+                {% endif %}
+                {% if is_borrowed %}
+                    <p class='font-bold text-orange-500'>You have to return this book till {{is_borrowed.due_date}} to borrow this again </p>
                 {% endif %}
             {% endif %}
             <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to Booklists</a></button>
