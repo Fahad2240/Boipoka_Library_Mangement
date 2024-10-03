@@ -1,93 +1,90 @@
-from django.forms import ValidationError
-from django.utils import timezone
-from datetime import timedelta
-from django.db import models
-from django.contrib.auth.models import User
+from django.utils import timezone  # Importing timezone to manage date and time
+from datetime import timedelta  # Importing timedelta for date arithmetic
+from django.db import models  # Importing models for database models
+from django.contrib.auth.models import User  # Importing User model for authentication
 # Create your models here.
 
-#Book Model
-
-class Book(models.Model):
-    title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    image=models.ImageField(upload_to='book_images',blank=True,null=True)
+# Book Model
+class Book(models.Model):  # Defining a model for books
+    title = models.CharField(max_length=255)  # Field for book title
+    author = models.CharField(max_length=255)  # Field for book author
+    description = models.TextField(blank=True, null=True)  # Optional field for book description
+    image = models.ImageField(upload_to='book_images', blank=True, null=True)  # Optional field for book image upload
     availability_status = models.BooleanField(default=True)  # True if available for borrowing
-    total_copies = models.IntegerField(default=1)
-    available_copies = models.IntegerField(default=1)
-    
-    def __str__(self):
-        return f"{self.title} by {self.author}"
-    
+    total_copies = models.IntegerField(default=1)  # Total number of copies of the book
+    available_copies = models.IntegerField(default=1)  # Number of copies currently available for borrowing
 
+    def __str__(self):  # String representation of the Book model
+        return f"{self.title} by {self.author}"  # Returns title and author for easy identification
 
 # Subscription Model
-class Subscription(models.Model):
-    TIER_CHOICES = [
-        ('Basic', 'Basic'),
-        ('Premium', 'Premium'),
-        ('VIP', 'VIP'),
+class Subscription(models.Model):  # Defining a model for user subscriptions
+    TIER_CHOICES = [  # Choices for subscription tiers
+        ('Basic', 'Basic'),  # Basic tier
+        ('Premium', 'Premium'),  # Premium tier
+        ('VIP', 'VIP'),  # VIP tier
     ]
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
-    subscription_type = models.CharField(max_length=10, choices=TIER_CHOICES, default='Basic')
+    # tier = models.CharField(max_length=20, choices=TIER_CHOICES)  # (Commented out) Field for subscription tier
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')  # One-to-one relationship with User model
+    subscription_type = models.CharField(max_length=10, choices=TIER_CHOICES, default='Basic')  # Type of subscription chosen by user
     # The `max_books` field in the `Subscription` model is determining the maximum number of books a
     # user can borrow based on their subscription tier.
-    max_books = models.IntegerField(default=2)  # Default to Basic
-    subscription_start = models.DateTimeField(default=timezone.now)
-    subscription_end = models.DateTimeField()
+    max_books = models.IntegerField(default=2)  # Default to Basic subscription (2 books)
+    subscription_start = models.DateTimeField(default=timezone.now)  # Subscription start time
+    subscription_end = models.DateTimeField()  # Subscription end time
 
-
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # Overriding the save method to customize saving behavior
         # Set subscription duration (e.g., 30 days)
-        if not self.subscription_end:
-            self.subscription_end = self.subscription_start + timedelta(days=30)
+        if not self.subscription_end:  # Check if subscription_end is not set
+            self.subscription_end = self.subscription_start + timedelta(days=30)  # Set end date to 30 days after start
 
         # Set max_books based on subscription tier
-        if self.subscription_type == 'Basic':
-            self.max_books = 2
-        elif self.subscription_type == 'Premium':
-            self.max_books = 5
-        elif self.subscription_type == 'VIP':
-            self.max_books = 10
+        if self.subscription_type == 'Basic':  # If subscription is Basic
+            self.max_books = 2  # Set max books to 2
+        elif self.subscription_type == 'Premium':  # If subscription is Premium
+            self.max_books = 5  # Set max books to 5
+        elif self.subscription_type == 'VIP':  # If subscription is VIP
+            self.max_books = 10  # Set max books to 10
         
-        super(Subscription, self).save(*args, **kwargs)
+        super(Subscription, self).save(*args, **kwargs)  # Call the original save method
 
-    def __str__(self):
-        return f"{self.user.username} - {self.subscription_type}"
-    @property
-    def borrowing_set(self):
-        return Borrowing.objects.filter(subscription=self) 
+    def __str__(self):  # String representation of the Subscription model
+        return f"{self.user.username} - {self.subscription_type}"  # Returns the username and subscription type
+
+    @property  # Decorator to create a read-only property
+    def borrowing_set(self):  # Property to get borrowings related to the subscription
+        return Borrowing.objects.filter(subscription=self)  # Returns all borrowings for this subscription
 
 
-class Borrowing(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
-    borrowed_on = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateTimeField(null=True, blank=True)  # Add due date field
+class Borrowing(models.Model):  # Defining a model for book borrowing
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)  # Foreign key to Book model
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)  # Foreign key to Subscription model
+    borrowed_on = models.DateTimeField(auto_now_add=True)  # Timestamp for when the book was borrowed
+    due_date = models.DateTimeField(null=True, blank=True)  # Field for due date of the borrowed book
     returned_at = models.DateTimeField(null=True, blank=True)  # Track when the book was returned
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='borrowings')
-    
-    def save(self, *args, **kwargs):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='borrowings')  # Foreign key to User model
+
+    def save(self, *args, **kwargs):  # Overriding the save method for Borrowing
         # Check if the user has a subscription
         # Proceed to set the due date if not already set
-        if not self.due_date:
-            if self.borrowed_on is None:
-                self.borrowed_on = timezone.now()
-            elif self.borrowed_on.tzinfo is None:
-                self.borrowed_on = timezone.make_aware(self.borrowed_on)
+        if not self.due_date:  # Check if due_date is not set
+            if self.borrowed_on is None:  # If borrowed_on is not set
+                self.borrowed_on = timezone.now()  # Set borrowed_on to the current time
+            elif self.borrowed_on.tzinfo is None:  # If borrowed_on is naive (not timezone-aware)
+                self.borrowed_on = timezone.make_aware(self.borrowed_on)  # Make it timezone-aware
         
-            self.due_date = self.borrowed_on + timedelta(days=14)
+            self.due_date = self.borrowed_on + timedelta(days=14)  # Set due date to 14 days after borrowed_on
             
         # Decrease available copies of the book
+        # (The line to decrease available copies seems to be missing here, which would normally be included)
 
-        super(Borrowing, self).save(*args, **kwargs)
+        super(Borrowing, self).save(*args, **kwargs)  # Call the original save method
 
-    def return_book(self):
-        # Mark the book as returned
-        self.returned_at = timezone.now()
-        self.book.available_copies += 1  # Increase the available copies
-        self.book.save()
-        self.save()
-    def __str__(self):
-        return f"{self.user.username} borrowed {self.book.title} on {self.borrowed_on} by {self.subscription}"
+    def return_book(self):  # Method to handle returning a book
+        self.returned_at = timezone.now()  # Mark the returned_at field with current time
+        self.book.available_copies += 1  # Increase the available copies of the book by 1
+        self.book.save()  # Save the updated book instance
+        self.save()  # Save the updated borrowing instance
+
+    def __str__(self):  # String representation of the Borrowing model
+        return f"{self.user.username} borrowed {self.book.title} on {self.borrowed_on} by {self.subscription}"  # Returns borrowing details

@@ -1,26 +1,28 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-import logging
-from smtplib import SMTPException
-import threading
-from django.shortcuts import get_object_or_404, render,redirect
-from django.contrib.auth import login,authenticate,logout
-import requests
-from boipoka import settings
-from boipoka_app.utils import get_user_subscription
-from .forms import *
-from .models import *
-from django.contrib.auth.decorators import login_required,user_passes_test
-from django.contrib import messages
-from django.core.mail import send_mail
-from django.core.files.base import ContentFile
-from urllib.parse import urlparse
-from django.contrib.auth import get_user_model
+from datetime import datetime  # Import datetime for date manipulations
+from django.core.mail import EmailMessage  # Import EmailMessage for sending emails
+import logging  # Import logging for logging errors and information
+from smtplib import SMTPException  # Import SMTPException to handle email sending errors
+import threading  # Import threading for sending emails in separate threads
+from django.shortcuts import get_object_or_404, render, redirect  # Import necessary functions for view handling
+from django.contrib.auth import login, authenticate, logout  # Import authentication functions
+import requests  # Import requests for making API calls
+from boipoka import settings  # Import project settings
+from boipoka_app.utils import get_user_subscription  # Import utility function to get user subscription
+from .forms import *  # Import all forms from the current package
+from .models import *  # Import all models from the current package
+from django.contrib.auth.decorators import login_required, user_passes_test  # Import decorators for access control
+from django.contrib import messages  # Import messages framework for user feedback
+from django.core.mail import send_mail  # Import send_mail function for sending emails
+from django.core.files.base import ContentFile  # Import ContentFile for handling file content
+from urllib.parse import urlparse  # Import urlparse for URL manipulation
+from django.contrib.auth import get_user_model  # Import function to get User model
 
 def index(request):
     return render(request,'boipoka_app/index.html')
 
 def register(request):
+    if request.user.is_authenticated:
+        return redirect('/')
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -442,6 +444,7 @@ def delete_subscription(request, pk):
     user = get_object_or_404(User, pk=pk)
     subscription = get_object_or_404(Subscription, user=user)
     subscription.delete()
+    
     return redirect('boipoka_app:user_details',pk=user.pk)
 
 @user_passes_test(is_admin)
