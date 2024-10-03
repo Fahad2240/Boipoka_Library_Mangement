@@ -128,33 +128,31 @@ The Boipoka application is designed to facilitate the management of a library sy
    ```bash
    git clone [https://github.com/Fahad2240/Boipoka_Library_Mangement]
    cd Boipoka_Library_Mangement
-
+   ```
 2. **Set Up a Virtual Environment**
 ```
 python -m venv venv
 venv/bin/activate 
 ```
-### Local Development Setup
-3. **Create a Local Database**:
-   Create a Database using pgAdmin:
-	If you prefer using pgAdmin to create the database, follow these steps:
-	Open pgAdmin:
-	
-	Launch pgAdmin and connect to your PostgreSQL server.
-	Create a New Database:
-	
-	In pgAdmin, expand your server in the left-hand sidebar, right-click on Databases, and select Create > Database.
-	In the Create Database dialog:
-	Enter the Database name (e.g., your_db_name).
-	Set the Owner (choose the PostgreSQL user, such as postgres).
-	Click Save to create the database.
-	Verify the Database:
-	
-	Check under Databases in the left-hand sidebar to ensure your new database is listed.
-
-3. **Update `settings.py` for Local Development**:
-   - For local development, modify the `DATABASES` configuration in `settings.py` to use your local PostgreSQL instance:
-     ```python
+3. **Install dependencies:**
+ ``` bash
+  pip install -r requirements.txt
+```
+4. **Set up the database:**
+- Run migrations to set up the database schema:
+```bash
+python manage.py migrate
+```
+5. **Create a superuser (optional for admin access):**
+```bash
+python manage.py createsuperuser
+```
+6. **Running the Development Server**
+- Start the development server with:
+```bash
+python manage.py runserver
+```
+ #You can access the application at http://127.0.0.1:8000/.
      DATABASES = {
          'default': {
              'ENGINE': 'django.db.backends.postgresql',
@@ -165,7 +163,7 @@ venv/bin/activate
              'PORT': '5432',
          }
      }
-     ```
+    ```
 ### Cloud Setup Instructions (Render PostgreSQL)
 1. **Database URL**: Your Django project should already have a `DATABASE_URL` environment variable set up on Render's dashboard. The `DATABASE_URL` contains all the necessary connection info to your PostgreSQL database.
    - The connection string will look something like: `postgres://username:password@hostname:port/dbname`.
