@@ -152,18 +152,18 @@ python manage.py createsuperuser
 ```bash
 python manage.py runserver
 ```
- #You can access the application at http://127.0.0.1:8000/.
-     DATABASES = {
-         'default': {
-             'ENGINE': 'django.db.backends.postgresql',
-             'NAME': 'your_db_name',
-             'USER': 'your_username',
-             'PASSWORD': 'your_password',
-             'HOST': 'localhost',
-             'PORT': '5432',
-         }
-     }
-    ```
+ ### You can access the application at http://127.0.0.1:8000/.
+```DATABASES = {
+ 'default': {
+     'ENGINE': 'django.db.backends.postgresql',
+     'NAME': 'your_db_name',
+     'USER': 'your_username',
+     'PASSWORD': 'your_password',
+     'HOST': 'localhost',
+     'PORT': '5432',
+ }
+}
+```
 ### Cloud Setup Instructions (Render PostgreSQL)
 1. **Database URL**: Your Django project should already have a `DATABASE_URL` environment variable set up on Render's dashboard. The `DATABASE_URL` contains all the necessary connection info to your PostgreSQL database.
    - The connection string will look something like: `postgres://username:password@hostname:port/dbname`.
