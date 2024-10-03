@@ -55,6 +55,7 @@
                     </form>
                 </div>
                 {% endif %}
+                <pre>{{is_borrowed.due_date}}</pre>
                 {% if is_borrowed %}
                     <p class='font-bold text-orange-500'>You have to return this book till {{is_borrowed.due_date}} to borrow this again </p>
                 {% endif %}
