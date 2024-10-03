@@ -24,14 +24,16 @@ The Boipoka application is designed to facilitate the management of a library sy
 2. **Database Configuration in Django**:
    - In your `settings.py`, make sure that you’re reading the `DATABASE_URL` from the environment. Typically, you can use `dj-database-url` for this:
      ```python
-	import dj_database_url
-	DATABASES = {
-	    'default': dj_database_url.config(
-	        # Replace this value with your local database's connection string.
-	        default='postgresql://postgres:postgres@localhost:5432/mysite',
-	        conn_max_age=600
-	    )
-	}
+     # Import dj-database-url at the beginning of the file.
+     import dj_database_url
+     # Replace the SQLite DATABASES configuration with PostgreSQL:
+     DATABASES = {
+       'default': dj_database_url.config(
+          # Replace this value with your local database's connection string.
+          default='postgresql://postgres:postgres@localhost:5432/mysite',
+          conn_max_age=600
+       )
+    }
      ```
 3. **Deploying**: On Render, when you deploy your app, PostgreSQL will be automatically connected through the `DATABASE_URL` environment variable, so you don't need to configure anything further for cloud deployment.
 
