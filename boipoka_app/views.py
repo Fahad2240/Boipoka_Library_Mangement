@@ -444,7 +444,7 @@ def delete_subscription(request, pk):
     user = get_object_or_404(User, pk=pk)
     subscription = get_object_or_404(Subscription, user=user)
     # Get all borrowed books for the user
-    borrowed_books = Borrowing.objects.filter(user=user)
+    borrowed_books = Borrowing.objects.filter(user=user,subscription=subscription)
     for borrowed in borrowed_books:
         # Retrieve the book
         book = get_object_or_404(Book, pk=borrowed.book.pk)
