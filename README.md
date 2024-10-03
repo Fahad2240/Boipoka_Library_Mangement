@@ -134,4 +134,57 @@ The Boipoka application is designed to facilitate the management of a library sy
 python -m venv venv
 venv/bin/activate 
 ```
+### Local Development Setup
+3. **Create a Local Database**:
+   Create a Database using pgAdmin:
+	If you prefer using pgAdmin to create the database, follow these steps:
+	Open pgAdmin:
+	
+	Launch pgAdmin and connect to your PostgreSQL server.
+	Create a New Database:
+	
+	In pgAdmin, expand your server in the left-hand sidebar, right-click on Databases, and select Create > Database.
+	In the Create Database dialog:
+	Enter the Database name (e.g., your_db_name).
+	Set the Owner (choose the PostgreSQL user, such as postgres).
+	Click Save to create the database.
+	Verify the Database:
+	
+	Check under Databases in the left-hand sidebar to ensure your new database is listed.
+
+3. **Update `settings.py` for Local Development**:
+   - For local development, modify the `DATABASES` configuration in `settings.py` to use your local PostgreSQL instance:
+     ```python
+     DATABASES = {
+         'default': {
+             'ENGINE': 'django.db.backends.postgresql',
+             'NAME': 'your_db_name',
+             'USER': 'your_username',
+             'PASSWORD': 'your_password',
+             'HOST': 'localhost',
+             'PORT': '5432',
+         }
+     }
+     ```
+### Cloud Setup Instructions (Render PostgreSQL)
+1. **Database URL**: Your Django project should already have a `DATABASE_URL` environment variable set up on Render's dashboard. The `DATABASE_URL` contains all the necessary connection info to your PostgreSQL database.
+   - The connection string will look something like: `postgres://username:password@hostname:port/dbname`.
+   - Render should automatically inject this environment variable into your Django app when deployed.
+
+2. **Database Configuration in Django**:
+   - In your `settings.py`, make sure that you’re reading the `DATABASE_URL` from the environment. Typically, you can use `dj-database-url` for this:
+     ```python
+     # Import dj-database-url at the beginning of the file.
+     import dj_database_url
+     # Replace the SQLite DATABASES configuration with PostgreSQL:
+     DATABASES = {
+       'default': dj_database_url.config(
+          # Replace this value with your local database's connection string.
+          default='postgresql://postgres:postgres@localhost:5432/mysite',
+          conn_max_age=600
+       )
+     }
+     ```
+   
+
       						
