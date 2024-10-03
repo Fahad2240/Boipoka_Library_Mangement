@@ -26,7 +26,7 @@
                         <div>
                             <p class="text-dark mx-20">{{book.author}}</p>
                         </div>
-                        {% if not book_availability|get_item:book.pk or book.available_copies == 0 and not request.user.is_superuser %}
+                        {% if not book_availability|get_item:book.pk  and not request.user.is_superuser and reuqest.user.subscription %}
                         <div class="flex flex-row items-center justify-between gap-2">
                             <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
                             <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
