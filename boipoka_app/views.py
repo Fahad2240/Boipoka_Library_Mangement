@@ -101,15 +101,13 @@ def book_details(request, pk):
     
     # Count how many books the user has currently borrowed and not returned
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
-    
+    book_due_info = None  
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
     if is_borrowed:
         borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True)
         if borrowing_record:
             book_due_info = borrowing_record.due_date
-        else:
-            book_due_info = None  # Or handle the case where no borrowing record is found
 
     # Get user's subscription information
     # subscription = Subscription.objects.filter(user=request.user).first()
