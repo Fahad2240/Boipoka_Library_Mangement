@@ -13,7 +13,7 @@
                     <div class="flex flex-col justify-around items-center ">
                         <div>
                             {% if book_availability|get_item:book.pk %}
-                                <a href="{% url 'boipoka_app:book_details' book.id %}" disabled><img src="{{book.image.url}}" alt="" class="w-56 h-56 ">
+                                <a href="{% url 'boipoka_app:book_details' book.id %}" ><img src="{{book.image.url}}" alt="" class="w-56 h-56 ">
                                 </a>
                             {% else %}
                             <a disabled><img src="{{book.image.url}}" alt="" class="w-56 h-56 ">
@@ -26,7 +26,7 @@
                         <div>
                             <p class="text-dark mx-20">{{book.author}}</p>
                         </div>
-                        {% if not book_availability|get_item:book.pk or book.available_copies == 0  %}
+                        {% if not book_availability|get_item:book.pk or book.available_copies == 0 and not request.user.is_superuser %}
                         <div class="flex flex-row items-center justify-between gap-2">
                             <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
                             <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
@@ -37,9 +37,9 @@
                         </div>
                         {% endif %}
                         <div>
-                            {% if book.available_copies > 0 %}
+                            {% if book.available_copies > 0  %}
                                 <p class="rounded font-bold text-dark bg-green-950 p-2 text-center">Remaining -  {{book.available_copies}}</p>
-                                {% else %}
+                            {% else %}
                                 <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Out of Stock</p>
                             {% endif %}
                         </div>

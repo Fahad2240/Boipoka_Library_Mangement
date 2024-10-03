@@ -345,8 +345,6 @@ def update_due_date(request, pk):
     return redirect('boipoka_app:user_details', pk=user.pk)
         # return redirect('boipoka_app:user_details', pk=borrowing.user.pk)
 
-    return redirect('boipoka_app:user_details', pk=user.pk)
-
 logger = logging.getLogger(__name__)
 
 def send_email_threaded(subject: str, message: str, sender_email: str, toaddr: list, reply_to: list = None):
