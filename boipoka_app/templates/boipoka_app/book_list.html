@@ -31,10 +31,12 @@
                     {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription %}
                         <div class="flex flex-row items-center justify-between gap-2">
                             <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
-                            <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
-                                {% csrf_token %}
-                                <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
-                            </form>
+                            {% if book.available_copies > 0 %}
+                                <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
+                                </form>
+                            {% endif %}
                         </div>
                     {% endif %}
                     <div>
