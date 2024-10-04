@@ -9,9 +9,11 @@ Additionally, the navigation bar displays the user's subscription name and end d
 
 Role-based access ensures that both regular users and administrators can efficiently perform their tasks. Administrators have special access privileges through a created superuser account, which can be logged in using the username "admin" and the password "admin." From the navigation bar, admins can manage users and add new books. They can click on any book image displayed in the book list to access the book details page, where they have the option to edit or delete the book.
 
-When the admin clicks the "Handle User" button, they can view a list of all users. By selecting a particular user, the admin can see detailed information such as the user’s name, subscription type, and maximum books allowed if the user has an active subscription; otherwise, it will indicate "No Subscription." If a user has a subscription, the admin can view and edit the subscription's start and end dates, along with the user's borrowed books, displaying the book names and their respective due dates, which can also be edited easily.
+When the admin clicks the "Handle User" button, they can view a list of all users. By selecting a particular user, the admin can see detailed information such as the user’s name, subscription type, and maximum books allowed if the user has an active subscription; otherwise, it will indicate "No Subscription." If a user has a subscription, the admin can view and edit the subscription's start and end dates, along with the user's borrowed books, displaying the book names and their respective due dates, which can also be edited easily. The admin also has the ability to edit or delete user accounts as needed.
 
 Additionally, the admin has the capability to manage overdue books, allowing them to send reminders, complete with penalties, via email by clicking the "Send Reminder" button. Any changes made to a user's subscription end date will be reflected in the navigation bar for that specific user. If needed, the admin can delete a subscription by clicking the "Delete Subscription" button. Furthermore, if the admin wishes to modify a due date to mark it as overdue for a user and send a reminder, this action will be accurately reflected in the user’s details page accordingly. This comprehensive administrative functionality ensures efficient user management and maintains the integrity of the borrowing system while providing a robust platform for effective library management.
+
+
 
 
 # 2. Setup Instructions
