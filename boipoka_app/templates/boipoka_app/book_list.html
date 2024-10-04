@@ -14,15 +14,15 @@
                     <div>
                         {% if book_availability|get_item:book.pk or request.user.is_superuser %}
                             {% if book.image %}
-                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56"></a>
+                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 border-solid border-indigo-500"></a>
                             {% else %}
-                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="" alt="No image available" class="w-56 h-56"></a>
+                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="" alt="No image available" class="w-56 h-56 border-solid border-indigo-500"></a>
                             {% endif %}
                         {% else %}
                             {% if book.image %}
-                                <a disabled><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 "></a>
+                                <a disabled><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 border-solid border-indigo-500"></a>
                                 {% else %}
-                                <a disabled><img src="" alt="No image available" class="w-56 h-56 "></a>
+                                <a disabled><img src="" alt="No image available" class="w-56 h-56 border-solid border-indigo-500"></a>
                                 {% endif %}
                         {% endif %}
                     </div>
