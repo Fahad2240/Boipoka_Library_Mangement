@@ -5,6 +5,9 @@ set -o errexit
 # Modify this line as needed for your package manager (pip, poetry, etc.)
 pip install -r requirements.txt
 
+#tailwind dependencies
+# python manage.py tailwind install
+
 # Convert static asset files
 python manage.py collectstatic --no-input
 
