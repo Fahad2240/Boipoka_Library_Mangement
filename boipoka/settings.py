@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'boipoka_app',
     'tailwind',
-    'theme'
+    'theme',
+    'django_browser_reload'
 ]
 
 TAILWIND_APP_NAME='theme'
