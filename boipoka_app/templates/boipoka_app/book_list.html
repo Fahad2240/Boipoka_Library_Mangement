@@ -10,19 +10,19 @@
     {% if books %}
         <div class="mt-10 w-full h-full rounded-3xl grid grid-cols-4 items-center text-slate-300 gap-3">
             {% for book in books %}
-                <div class="flex flex-col justify-around items-center ">
-                    <div>
+                <div class="flex flex-col justify-around items-center border-solid border-indigo-500">
+                    <div class="border-solid border-indigo-500"">
                         {% if book_availability|get_item:book.pk or request.user.is_superuser %}
                             {% if book.image %}
-                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 border-solid border-indigo-500"></a>
+                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 "></a>
                             {% else %}
-                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="" alt="No image available" class="w-56 h-56 border-solid border-indigo-500"></a>
+                                <a href="{% url 'boipoka_app:book_details' book.id %}"><img src="" alt="No image available" class="w-56 h-56"></a>
                             {% endif %}
                         {% else %}
                             {% if book.image %}
-                                <a disabled><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 border-solid border-indigo-500"></a>
+                                <a disabled><img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56"></a>
                                 {% else %}
-                                <a disabled><img src="" alt="No image available" class="w-56 h-56 border-solid border-indigo-500"></a>
+                                <a disabled><img src="" alt="No image available" class="w-56 h-56"></a>
                                 {% endif %}
                         {% endif %}
                     </div>
