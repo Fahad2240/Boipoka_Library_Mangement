@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG') == 'True'
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'boipoka_app',
     'tailwind',
     'theme',
-    'django_browser_reload'
+    # 'django_browser_reload'
 ]
 
 TAILWIND_APP_NAME='theme'
@@ -68,7 +68,7 @@ ROOT_URLCONF = 'boipoka.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR/ 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'boipoka_app','templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -96,6 +96,7 @@ DEFAULT_FROM_EMAIL = "fahadish861@gmail.com"
 # INTERNAL_IPS = [
 #     "127.0.0.1",
 # ]
+# # TAILWIND_CSS_PATH = '/static/css/dist/styles.css'
 
 NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
@@ -168,7 +169,8 @@ TIME_ZONE = 'Asia/Dhaka'  # e.g., 'Asia/Dhaka'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 if not DEBUG:
     # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

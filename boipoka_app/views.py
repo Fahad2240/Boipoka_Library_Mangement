@@ -155,7 +155,7 @@ def create_subscription(request,pk):
     existing_subscription = Subscription.objects.filter(user=request.user)
     
     if existing_subscription:
-        messages.warning(request, "You already have an active subscription.")
+        # messages.warning(request, "You already have an active subscription.")
         return redirect('boipoka_app:book_details', pk=existing_subscription.book.pk)   # Redirect to the book details
 
     if request.method == "POST":
@@ -384,7 +384,7 @@ def send_reminder(request, pk):
     subscription = get_object_or_404(Subscription, user=user)
             
     if not borrowings.exists():
-        messages.warning(request, f'No overdue books found for user ID {pk}.')
+        # messages.warning(request, f'No overdue books found for user ID {pk}.')
         return redirect('boipoka_app:user_details')
     
     penalty_rate = 0
