@@ -1,0 +1,49 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% tailwind_css %}
+    <title>{% block title %}Subscription Creation{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    {% comment %} <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet"> {% endcomment %}
+    {% comment %} <script src="https://cdn.tailwindcss.com"></script> {% endcomment %}
+</head>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<body class=" bg-gray-900">
+{% block content %}
+    <h2 class=" text-white text-center ">Subscription Creation</h2>
+    
+    <div class="card-group flex gap-3 " style="margin-top:15% !important;">
+        <div class="card bg-success px-4 py-3 " style="border:none !important;font-weight: bold !important;font-size: 25px">
+            <div class="bg-success card-body text-white border-success">
+                <h5 class="card-title " style="font-size: 40px;">Basic</h5>
+                <p class="card-text">You can borrow atmost 2 books at once using this subscription plan</p>
+            </div>
+        </div>
+        <div class="card px-4 py-3 " style="border: none !important;background-color:#452c63 !important">
+            <div class="card-body text-white" style="background-color:#452c63 !important;font-weight:bold !important;font-size: 25px ">
+                <h5 class="card-title" style="font-size: 40px;">Premium</h5>
+                <p class="card-text">You can borrow atmost 5 books at once using this subscription plan</p>
+            </div>
+        </div>
+        <div class="card px-4 py-3" style="background-color:#33006F;color:white;font-weight:bold !important;font-size: 25px;">
+            <div class="card-body">
+                <h5 class="card-title" style="font-size: 40px;">VIP</h5>
+                <p class="card-text">You can borrow atmost 10 books at once using this subscription plan</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}  <!-- Render the form fields -->
+            <button type="submit" class="mt-1 py-2 px-8 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Choose Subscription</button>
+        </form>
+    </div>
+{% endblock %}  
+</body>

@@ -86,6 +86,9 @@ def create_books_in_db(book_list):
 @login_required
 def book_list(request):
     # Retrieve all available books
+    subscription=get_user_subscription(request.user)
+    if subscription is None:
+        return redirect('boipoka_app:subscription')
     books = Book.objects.filter(available_copies__gte=0)  # Get books that are available
     book_availability = {}
     borrow_info={}
@@ -103,10 +106,14 @@ def book_list(request):
 def book_details(request, pk):
     book = get_object_or_404(Book, pk=pk)
     subscription = get_user_subscription(request.user)  # Ensure this retrieves the correct subscription
-    
     # Count how many books the user has currently borrowed and not returned
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
     book_due_info = None  
+    print(borrowed_books_count)
+    flag=0
+    if borrowed_books_count >= subscription.max_books:
+        flag=1
+    print(flag)
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
     if is_borrowed:
@@ -126,19 +133,38 @@ def book_details(request, pk):
         'subscription': subscription,
         'availability': availability,
         'is_borrowed': is_borrowed,
-        'book_due_info': book_due_info
+        'book_due_info': book_due_info,
+        'flag':flag
     }
     return render(request, 'boipoka_app/book_details.html', context)
 
+def new_subscription_creation(request):
+    if request.method == "POST":
+        form = SubscriptionForm(request.POST)
+        if form.is_valid():
+            subscription = form.save(commit=False)
+            subscription.user = request.user
+            subscription.subscription_start = timezone.now()
+            subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
+            subscription.save()
+        return redirect('boipoka_app:book_list')
+    else:
+        form = SubscriptionForm()
+    return render(request, 'boipoka_app/new_subscription_creation.html',{'form':form})
+def subscription(request):
+    return render(request,'boipoka_app/subscription.html')
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
-
+        subscription=Subscription.objects.filter(user=user)
         if user is not None:
             login(request, user)
-            return redirect('boipoka_app:book_list')  # Redirect to book_list
+            if subscription:
+                return redirect('boipoka_app:book_list')  # Redirect to book_list
+            else:
+                return redirect('boipoka_app:subscription')
         else:
             # Handle invalid login and pass 'error' to the template
             return render(request, 'boipoka_app/login.html', {'error': 'Invalid credentials'})
@@ -181,14 +207,10 @@ def borrow_book(request, pk):
     subscription = get_user_subscription(request.user)  # Ensure this retrieves the correct subscription
     
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
-    print(borrowed_books_count)
-    print(subscription.max_books)
-    # Check subscription and borrowing limits
     if borrowed_books_count == subscription.max_books:
-        # borrowed_books_count+=1
-        messages.error(request, "Sorry, you have reached the limit of borrowed books for your subscription.")
+        # borrowed_books_count+=1)
+        # messages.error(request, "Sorry, you have reached the limit of borrowed books for your subscription.")
         return redirect('boipoka_app:book_details', pk=book.pk)
-
     if book.available_copies <= 0:
         messages.error(request, "No copies of the book are available to borrow.")
         return redirect('boipoka_app:book_details', pk=book.pk)
