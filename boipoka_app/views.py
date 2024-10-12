@@ -168,7 +168,7 @@ def book_list(request):
 def report_lost_or_damaged(request, pk):
     # Fetch the borrowing instance
     borrowing = Borrowing.objects.filter(user=request.user, book__pk=pk).first()
-
+    subscription = get_user_subscription(request.user)
     # Handle case where no borrowing record is found
     if not borrowing:
         messages.error(request, "No borrowing record found for this book.")
@@ -186,11 +186,13 @@ def report_lost_or_damaged(request, pk):
     if reported_issue:
         if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
             if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
-                subscription = get_user_subscription(request.user)
                 if subscription:
                     subscription.is_active = False
                     subscription.save()
                     messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
+            else:
+                if subscription:
+                    subscription.is_active=True
     
     # Suspend subscription if incidents are 3 or more
     subscription = get_user_subscription(request.user)
