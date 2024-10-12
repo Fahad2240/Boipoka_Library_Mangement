@@ -280,7 +280,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         subscription=Subscription.objects.filter(user=user)
         if subscription:
-            borrowing = Borrowing.objects.filter(user=request.user,is_damagedorlost=True).count()
+            borrowing = Borrowing.objects.filter(user=user,is_damagedorlost=True).count()
             if borrowing>=3:
                 messages.warning(request, "You account has been suspeneded.Please contact with Admin")
                 return redirect('boipoka_app:login')
