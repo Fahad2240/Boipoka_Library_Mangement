@@ -60,7 +60,7 @@
                         <div class="flex flex-row items-center justify-between gap-2">
                             <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
                             {% if isreported|get_item:book.pk %}
-                                {% if reactivation_flag %}
+                                {% if paidlist|get_item:book.pk %}
                                     <p class="text-white" style="background-color:#4B5320 !important">Wait for Approval.</p>
                                 {% else %}
                                     <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-3 py-3 underline text-white" style="background-color:#3CB371 !important">Pay Now</a></p>
