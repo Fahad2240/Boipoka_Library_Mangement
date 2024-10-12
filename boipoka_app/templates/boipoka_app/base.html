@@ -22,8 +22,7 @@
 {% load parse_datetime %}
 <nav class="-mt-20 fixed  flex items-center w-full px-5 py-5 text-xl text-slate-200  gap-3 justify-center bg-slate-500">
     <button  class="font-bold py-2 px-8 text-white hover:text-indigo-950 "><a href="{% url 'boipoka_app:book_list' %}">Home</a></button>
-    {% if request.user.subscription %}
-
+    {% if request.user.subscription.is_active %}
         {% with subscription=request.user.subscription %}
             {% timezone "Asia/Dhaka" %}
             {% with subscription_endtime=request.user.subscription.subscription_end %}
@@ -57,6 +56,10 @@
         </button>
         <button class=" px-6 py-2 bg-cyan-800 text-white font-semibold">
             <a href="{% url 'boipoka_app:users' %}">Handle User</a>
+        </button>
+        {% elif request.user.subscription.is_active %}
+        <button class=" px-6 py-2 bg-slate-700 text-white font-semibold">
+            <a href="{% url 'boipoka_app:reading_history' %}">ReadList History</a>
         </button>
         {% endif %}
     {% endif %}

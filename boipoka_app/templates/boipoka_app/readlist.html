@@ -1,0 +1,55 @@
+{% extends 'boipoka_app/base.html' %}
+{% load incomplete %}
+{% block title %}Read List History{% endblock title %}
+{% block content %}
+<div class="mt-20">
+    <h2 class="text-3xl text-white font-semibold text-center">Your Reading History</h2>
+    <form class="mt-10 flex flex-col items-center" method="GET" action="{% url 'boipoka_app:reading_history' %}">
+        <div>
+            <label class="text-white">Search a Borrowed Book by Title</label>
+            <input type="text" name="search" placeholder="Search by book title" value="{{ search_query }}">
+        </div>
+        <div>
+            <label class="text-white">Search a Borrowed Book by Start Date</label>
+            <input type="datetime-local" name="start_date" placeholder="Start Date" value="{{ start_date }}">
+        </div>
+        <div>
+            <label class="text-white">Search a Borrowed Book by End Date</label>
+            <input type="datetime-local" name="end_date" placeholder="End Date" value="{{ end_date }}">
+        </div>
+        <button type="submit" class="mt-10 text-white font-semibold px-3 py-2" style="background-color:#452c63 !important">Search</button>
+    </form>
+    <div class="mt-20">{% comment %}#4B0082{% endcomment %}
+    <ul class="text-2xl px-10 py-9 z-20 mt-28 text-white  rounded " style="position:absolute; background-color:#452c63  !important;left:20%;right:20%;margin:auto;">
+            {% for entry in history %}
+                <div class=" py-10">
+                    <li>
+                        {{ entry.book.title }} 
+                        <div class="mt-2">
+                            <p class="font-bold" style="color:black !important">Borrowed on: {{ entry.borrowed_on }}</p>
+                        </div>
+                        <div class="font-bold" >
+                            {% if entry.returned_at %}
+                            <p style="color:#17B169 !important">Returned on: {{ entry.returned_at }} </p>
+                            {% else %}
+                            <p style="color:#007791 !important">It is still not returned</p>
+                            {% endif %}
+                        </div>
+                        <div class="mt-5">
+                            {% if incomplete|get_unread:entry.pk == 1  %}
+                                <p class="font-bold" style="color:#DADD98 !important">Incomplete</p>
+                            {% else %}
+                                <a class="px-4 py-2 text-white" href="{% url 'boipoka_app:mark_unread' entry.pk %}" style="background-color:#4B0082 !important">Mark as Unread</a>
+                            {% endif %}
+                        </div>
+                        {% comment %} <a href="{% url 'boipoka_app:report_damage' entry.pk %}">Report Damage</a> {% endcomment %}
+                        {% comment %} <a href="{% url 'boipoka_app:report_loss' entry.pk %}">Report Loss</a> {% endcomment %}
+                    </li>
+                </div>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+
+{% endblock %}

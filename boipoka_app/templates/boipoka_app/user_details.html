@@ -1,7 +1,7 @@
 {% extends 'boipoka_app/base.html' %}
 {% block content %}
-<h2 class='text-white text-4xl text-center'>User Details</h2>
-<ul class=" mt-10  flex flex-col items-center justify-between gap-10">
+<h2 class=' text-white text-4xl text-center'>User Details</h2>
+<ul class=" mt-16  flex flex-col items-center justify-between gap-10">
     {% if context.user  %}
         <li class='text-xl bg-slate-600 rounded-sm px-10 py-10 font-bold'>
             <h3 >UserName: <span class='font-bold '>{{ context.user.username }}<span></h3>
@@ -12,6 +12,10 @@
                         {% csrf_token %}
                         <button type="submit" class=" px-2 py-1 bg-red-700 text-white ">Delete Subscription</button>
                     </form>
+                </div>
+                <div class="mt-5 mb-5 flex flex-row gap-3 font-bold">
+                    <p>Active Status : {% if context.subscription.is_active %} active {% else %} suspended {% endif %}
+                    <button  class=" px-2 py-1 text-white " style="background-color:#004953 !important"><a href="">Reactivate</a></button>
                 </div>
                 <p>Maximum Books: {{ context.user.subscription.max_books }}</p>
                 <p>Subscription Starting Date: {{ context.user.subscription.subscription_start }}</p>
@@ -26,11 +30,23 @@
                     <input type="datetime-local" name="expire-date"  required>
                     <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription End Date</button>
                 </form>
-                <p>Borrowed Books:</p>
-                <ul class="text-slate-300 font-bold ">
+                <p class="text-center font-semibold">Borrowed Books</p>
+                {% if context.returned_books %}
+                    <p class="mt-5 font-bold" style="color:#FEBE10 !important">Returned Books : </p>
+                    <ul class="mt-5 text-slate-300 font-bold">
+                    {% for item in context.returned_books %}
+                        <div class="flex flex-row items-center gap-5">
+                                <li>{{ item.book.title }} - Due: {{ item.due_date }} Returned at - {{item.returned_at}}
+                                </li>
+                        </div>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                <ul class="mt-5 text-slate-300 font-bold ">
+                    <p class="font-bold" style="color:#33006F !important">Not Returned Books : </p>
                     {% for borrowing in context.borrowings %}
-                    <div class="flex flex-row items-center gap-5">
-                            <li>{{ borrowing.book.title }} - Due: {{ borrowing.due_date }} {% if borrowing.returned_at %}(Returned){% else %}(Not Returned){% endif %}
+                    <div class="mt-5 flex flex-row items-center gap-5">
+                            <li>{{ borrowing.book.title }} - Due: {{ borrowing.due_date }} {% if not borrowing.returned_at %}(Not Returned){% endif %}
                             <form action="{% url 'boipoka_app:update_due_date' borrowing.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}
                                 <input type="datetime-local" name="due_date"  required>
@@ -41,8 +57,8 @@
                     {% endfor %}
                 </ul>
                 {% if context.overdue_books %}
-                    <p>Overdue Books:</p>
-                    <ul class="text-white font-bold ">
+                    <p class="mt-5 text-center font-bold">Overdue Books:</p>
+                    <ul class="mt-5 text-white font-bold ">
                         {% for overdue in context.overdue_books %}
                             <li>{{ overdue.book.title }} - Due: {{ overdue.due_date }}</li>
                             <form action="{% url 'boipoka_app:send_reminder' context.user.pk %}" method="post" >

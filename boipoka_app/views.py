@@ -5,6 +5,7 @@ from smtplib import SMTPException  # Import SMTPException to handle email sendin
 import threading  # Import threading for sending emails in separate threads
 from django.shortcuts import get_object_or_404, render, redirect  # Import necessary functions for view handling
 from django.contrib.auth import login, authenticate, logout  # Import authentication functions
+from django.urls import reverse
 import requests  # Import requests for making API calls
 from boipoka import settings  # Import project settings
 from boipoka_app.utils import get_user_subscription  # Import utility function to get user subscription
@@ -17,6 +18,20 @@ from django.core.files.base import ContentFile  # Import ContentFile for handlin
 from urllib.parse import urlparse  # Import urlparse for URL manipulation
 from django.contrib.auth import get_user_model  # Import function to get User model
 
+
+def is_admin(user):
+    """
+    Check if the given user is an admin.
+
+    Args:
+    user (User): The user object to be checked.
+
+    Returns:
+    bool: True if the user is an admin, False otherwise.
+    """
+    return user.is_staff
+def is_not_admin(user):
+    return not user.is_staff
 def index(request):
     return render(request,'boipoka_app/index.html')
 
@@ -85,22 +100,122 @@ def create_books_in_db(book_list):
 
 @login_required
 def book_list(request):
-    # Retrieve all available books
-    subscription=get_user_subscription(request.user)
-    if subscription is None:
-        return redirect('boipoka_app:subscription')
-    books = Book.objects.filter(available_copies__gte=0)  # Get books that are available
+    # Retrieve the user's subscription
+    subscription = get_user_subscription(request.user)
+    # If the user is not an admin and does not have a subscription, redirect them to the subscription page
+    
+    if  is_not_admin(request.user):
+        if subscription is None :
+            return redirect('boipoka_app:subscription')
+
+    # Get all available books
+    books = Book.objects.filter(available_copies__gte=0)  
     book_availability = {}
-    borrow_info={}
-    create_books_in_db(fetch_books_data(0,10))
+    borrow_info = {}
+    isreported = {}
+    paidlist={}
+
+    # Create or update books in the database from external source
+    create_books_in_db(fetch_books_data(0, 10))
+
     for book in books:
+        reported_issue = Borrowing.objects.filter(user=request.user, book=book, is_damagedorlost=True).first()
+
+    # If the book has been marked as damaged/lost for more than a day and the fine is not paid
+        if reported_issue:
+            if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
+                if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
+                    subscription = get_user_subscription(request.user)
+                    if subscription:
+                        subscription.is_active = False
+                        subscription.save()
+            if reported_issue.fine_paid is True:
+                paidlist[book.pk]=True
+            else:
+                paidlist[book.pk]=False
+            # Update isreported to track both the status and payment information
         # Check if the user has borrowed this book
         is_borrowed = Borrowing.objects.filter(user=request.user, book=book).exists()
+        if is_borrowed:
+            borrowed = Borrowing.objects.filter(user=request.user, book=book).first()
+            isreported[book.pk] = borrowed.is_damagedorlost
+        else:
+            isreported[book.pk] = False  # Default value if the book is not borrowed
+
+        # Determine if the book is available
         book_availability[book.pk] = not is_borrowed  # True if available
         borrow_info[book.pk] = is_borrowed
+
+        # Update availability if no copies are left
         if book.available_copies == 0:
             book_availability[book.pk] = False
-    return render(request, 'boipoka_app/book_list.html', {'books': books, 'book_availability': book_availability,'borrow_info':borrow_info})
+
+    # Check if the user has a reactivation flag set in the session
+    reactivation_flag = request.session.pop('reactivation_flag', False)
+    # print(reactivation_flag)
+
+    return render(request, 'boipoka_app/book_list.html', {
+        'books': books,
+        'book_availability': book_availability,
+        'borrow_info': borrow_info,
+        'isreported': isreported,
+        'reactivation_flag': reactivation_flag,
+        'paidlist': paidlist
+    })
+
+
+@login_required
+def report_lost_or_damaged(request, pk):
+    # Fetch the borrowing instance
+    borrowing = Borrowing.objects.filter(user=request.user, book__pk=pk).first()
+
+    # Handle case where no borrowing record is found
+    if not borrowing:
+        messages.error(request, "No borrowing record found for this book.")
+        return redirect('boipoka_app:book_list')
+    
+    # Mark the book as damaged or lost
+    borrowing.is_damagedorlost = True
+    borrowing.save()
+
+    # Check the number of lost/damaged reports for the user
+    incident_count = Borrowing.objects.filter(user=request.user, is_damagedorlost=True).count() 
+    reported_issue = Borrowing.objects.filter(user=request.user, book__pk=pk, is_damagedorlost=True).first()
+
+    # If the book has been marked as damaged/lost for more than a day and the fine is not paid
+    if reported_issue:
+        if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
+            if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
+                subscription = get_user_subscription(request.user)
+                if subscription:
+                    subscription.is_active = False
+                    subscription.save()
+                    messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
+    
+    # Suspend subscription if incidents are 3 or more
+    subscription = get_user_subscription(request.user)
+    if incident_count >= 3:
+        if subscription:
+            subscription.is_active = False  # Suspend the subscription
+            subscription.save()
+            messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
+            # Send a notification email here if needed
+            return redirect('boipoka_app:book_list')
+
+    # Display a success message and redirect back to the book list
+    messages.success(request, f"The book '{borrowing.book.title}' has been reported as lost/damaged. A fine of 500 BDT has been applied.")
+    return redirect('boipoka_app:book_list')
+
+@login_required
+def manage_fines(request,pk):
+    reported=get_object_or_404(Borrowing,user=request.user,is_damagedorlost=True,book__pk=pk)
+    reported.fine_paid=True
+    reported.save()
+    #Set a flag in the session indicating the payment
+    # if reported.fine_paid == True:
+    #     request.session['reactivation_flag'] = True  # This flag indicates that payment was made
+    return redirect('boipoka_app:book_list')
+    
 
 @login_required
 def book_details(request, pk):
@@ -109,18 +224,20 @@ def book_details(request, pk):
     # Count how many books the user has currently borrowed and not returned
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
     book_due_info = None  
-    print(borrowed_books_count)
+    # print(borrowed_books_count)
+    check = Borrowing.objects.filter(user=request.user,book=book,reissue_state=True).exists()
     flag=0
     if borrowed_books_count >= subscription.max_books:
         flag=1
-    print(flag)
+    print(check)
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
+    book_due_near = False
     if is_borrowed:
         borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).first()
         if borrowing_record:
-            book_due_info = borrowing_record.due_date
-
+            book_due_info = borrowing_record.due_date  # You may want to format this if needed
+            book_due_near = borrowing_record.due_date < (timezone.now() + timedelta(days=1)) # This seems to check if due date is close
     # Get user's subscription information
     # subscription = Subscription.objects.filter(user=request.user).first()
 
@@ -134,7 +251,9 @@ def book_details(request, pk):
         'availability': availability,
         'is_borrowed': is_borrowed,
         'book_due_info': book_due_info,
-        'flag':flag
+        'book_due_near': book_due_near,
+        'flag':flag,
+        'check': check,  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and 'false' otherwise.  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and 'false' otherwise.  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and '
     }
     return render(request, 'boipoka_app/book_details.html', context)
 
@@ -151,6 +270,7 @@ def new_subscription_creation(request):
     else:
         form = SubscriptionForm()
     return render(request, 'boipoka_app/new_subscription_creation.html',{'form':form})
+@login_required
 def subscription(request):
     return render(request,'boipoka_app/subscription.html')
 def login_view(request):
@@ -159,9 +279,16 @@ def login_view(request):
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
         subscription=Subscription.objects.filter(user=user)
+        if subscription:
+            borrowing = Borrowing.objects.filter(user=request.user,is_damagedorlost=True).count()
+            if borrowing>=3:
+                messages.warning(request, "You account has been suspeneded.Please contact with Admin")
+                return redirect('boipoka_app:login')
+        
         if user is not None:
             login(request, user)
-            if subscription:
+            print(is_admin(user))
+            if subscription or is_admin(user):
                 return redirect('boipoka_app:book_list')  # Redirect to book_list
             else:
                 return redirect('boipoka_app:subscription')
@@ -224,30 +351,87 @@ def borrow_book(request, pk):
     book.available_copies -= 1
     book.save()
 
-    messages.success(request, "You have successfully borrowed the book.")
+    # messages.success(request, "You have successfully borrowed the book.")
     return redirect('boipoka_app:book_details', pk=book.pk)  # Redirect back to the book details page
+
+@user_passes_test(is_not_admin)
+def reading_history(request):
+    history = Borrowing.objects.filter(user=request.user).order_by('-borrowed_on')
+
+    # Handling search functionality
+    search_query = request.GET.get('search', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+    if start_date: 
+        start_date=datetime.strptime(start_date, '%Y-%m-%dT%H:%M')
+        if timezone.is_naive(start_date):
+            start_date=timezone.make_aware(start_date,timezone.get_current_timezone())
+    if end_date:
+        end_date=datetime.strptime(end_date, '%Y-%m-%dT%H:%M')
+        if timezone.is_naive(end_date):
+            end_date=timezone.make_aware(end_date,timezone.get_current_timezone())
+    if search_query:
+        history = history.filter(book__title__icontains=search_query)
+
+    if start_date and end_date:
+        history = history.filter(borrowed_on__range=[start_date, end_date])
+    
+    incomplete={}
+    for entry in history:
+        if entry.marked_as_unread:
+            incomplete[entry.pk]=1
+        else:
+            incomplete[entry.pk]=0
+    
+    return render(request, 'boipoka_app/readlist.html', {
+        'history': history,
+        'search_query': search_query,
+        'start_date': start_date,
+        'end_date': end_date,
+        'incomplete':incomplete
+    })
+    
+@user_passes_test(is_not_admin)
+def mark_unread(request, pk):
+    entry = get_object_or_404(Borrowing, pk=pk, user=request.user)
+    print(entry)
+    entry.readcheck()  # Mark as unread  
+    print(entry.marked_as_unread)
+    # messages.success(request, "Book marked as unread successfully.")
+    return redirect('boipoka_app:reading_history')
 
 @login_required
 def change_subscription(request):
     # Get the subscription object for the logged-in user
     subscription = get_object_or_404(Subscription, user=request.user)
-
+    borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
     if request.method == 'POST':
         # Get the new subscription type from the submitted form
         new_subscription_type = request.POST.get('subscription_type')
 
         # Validate that the submitted subscription type is valid
         if new_subscription_type in dict(Subscription.TIER_CHOICES):
-            subscription.subscription_type = new_subscription_type
             
             # Update max_books based on the selected subscription type
             if new_subscription_type == 'Basic':
-                subscription.max_books = 2
+                new_max_books = 2
             elif new_subscription_type == 'Premium':
-                subscription.max_books = 5
+                new_max_books = 5
             elif new_subscription_type == 'VIP':
-                subscription.max_books = 10
+                new_max_books = 10
+                
+                
+            if new_max_books <= borrowed_books_count:
+                books_to_return = (borrowed_books_count - new_max_books)+1
+                messages.error(
+                    request,
+                    f"You need to return {books_to_return} book(s) to downgrade to the {new_subscription_type} plan."
+                )
+                next_url=request.POST.get('next','boipoka_app:book_list')
+                return redirect(next_url)
 
+            subscription.subscription_type = new_subscription_type
+            subscription.max_books = new_max_books
             # Save the updated subscription
             subscription.save()
             # messages.success(request, "Subscription updated successfully.")
@@ -270,25 +454,32 @@ def return_book(request, pk):
     borrowing=get_object_or_404(Borrowing,book=book,user=request.user,returned_at__isnull=True)
     if request.method == 'POST':
         borrowing.return_book()
-        borrowing.delete()
+        borrowing.save()
         # messages.success(request, 'You have successfully returned this book.')
         redirect_to = request.POST.get('next', 'boipoka_app:book_list')
         return redirect(redirect_to)
     return render(request, 'boipoka_app/return_book.html', {'book': book,'borrowing':borrowing})
     
     
+@login_required
+def reissue_book(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    # Retrieve the user's borrowing record for the specific book
+    borrowing = get_object_or_404(Borrowing, book=book, user=request.user, returned_at__isnull=True)
+
+    if request.method == 'POST':
+        # Logic to extend the due date (you can customize the extension period)
+        borrowing.reissue()
+        # messages.success(request, 'The book has been successfully reissued. New due date: {}'.format(new_due_date.strftime('%Y-%m-%d')))
+        return redirect(f'{reverse("boipoka_app:book_details", args=[book.pk])}?test=true')
+
+    # context = {
+    #     'book': book,
+    #     'borrowing': borrowing,
+    # }
+    return redirect(reverse("boipoka_app:book_details", args=[book.pk]))
+
 # Check if the user is an admin
-def is_admin(user):
-    """
-    Check if the given user is an admin.
-
-    Args:
-    user (User): The user object to be checked.
-
-    Returns:
-    bool: True if the user is an admin, False otherwise.
-    """
-    return user.is_staff
 
 # Admin: Add a new book
 @user_passes_test(is_admin)
@@ -341,12 +532,18 @@ def user_details(request,pk):
     subscription = Subscription.objects.filter(user=user)
     borrowings = Borrowing.objects.filter(user=user)
     overdue_books = borrowings.filter(due_date__lt=timezone.now(), returned_at__isnull=True)
+    returned_books=borrowings.filter(returned_at__isnull=False)
+    damaged_books=Borrowing.objects.filter(is_damagedorlost=True)
+    reissue_requests =Borrowing.objects.filter(reissue_state=True)
     # print(overdue_books)
     context={
         'user': user,
         'subscription': subscription,
         'borrowings': borrowings,
         'overdue_books': overdue_books,
+        'returned_books': returned_books,
+        'damaged_books': damaged_books,
+        'reissue_requests': reissue_requests
     }
 
     return render(request, 'boipoka_app/user_details.html', {'context': context})
@@ -440,7 +637,7 @@ def send_reminder(request, pk):
         )
         separate_thread.start()
 
-    messages.success(request, f'Reminder(s) sent to {", ".join([b.user.username for b in borrowings])} for their overdue books.')
+    # messages.success(request, f'Reminder(s) sent to {", ".join([b.user.username for b in borrowings])} for their overdue books.')
     return redirect('boipoka_app:user_details', pk=pk)
 @user_passes_test(is_admin)
 def edit_user(request, pk):
@@ -450,7 +647,7 @@ def edit_user(request, pk):
         user.username = request.POST.get('username', user.username)
         user.email = request.POST.get('email', user.email)
         user.save()
-        messages.success(request, f'User {user.username} updated successfully.')
+        # messages.success(request, f'User {user.username} updated successfully.')
         return redirect('boipoka_app:user_details',pk=pk)
 
     return render(request, 'boipoka_app/edit_user.html', {'user': user})
@@ -459,7 +656,7 @@ def edit_user(request, pk):
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
     user.delete()
-    messages.success(request, f'User {user.username} deleted successfully.')
+    # messages.success(request, f'User {user.username} deleted successfully.')
     return redirect('boipoka_app:users')
 @user_passes_test(is_admin)
 def delete_subscription(request, pk):
