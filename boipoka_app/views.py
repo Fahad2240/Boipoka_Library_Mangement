@@ -213,7 +213,7 @@ def manage_fines(request,pk):
     reported.save()
     #Set a flag in the session indicating the payment
     # if reported.fine_paid == True:
-    #     request.session['reactivation_flag'] = True  # This flag indicates that payment was made
+    request.session['reactivation_flag'] = True  # This flag indicates that payment was made
     return redirect('boipoka_app:book_list')
     
 
