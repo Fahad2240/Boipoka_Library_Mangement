@@ -193,6 +193,7 @@ def report_lost_or_damaged(request, pk):
             else:
                 if subscription:
                     subscription.is_active=True
+                    subscription.save()
     
     # Suspend subscription if incidents are 3 or more
     subscription = get_user_subscription(request.user)
