@@ -42,12 +42,9 @@
                                 <a class="px-4 py-2 text-white" href="{% url 'boipoka_app:mark_unread' entry.pk %}" style="background-color:#4B0082 !important">Mark as Unread</a>
                             {% endif %}
                         </div>
-                        {% comment %} <a href="{% url 'boipoka_app:report_damage' entry.pk %}">Report Damage</a> {% endcomment %}
-                        {% comment %} <a href="{% url 'boipoka_app:report_loss' entry.pk %}">Report Loss</a> {% endcomment %}
                     </li>
                 </div>
             {% endfor %}
-        </ul>
     </div>
 </div>
 

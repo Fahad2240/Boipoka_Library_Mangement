@@ -13,7 +13,7 @@ class Book(models.Model):  # Defining a model for books
     availability_status = models.BooleanField(default=True)  # True if available for borrowing
     total_copies = models.IntegerField(default=1)  # Total number of copies of the book
     available_copies = models.IntegerField(default=1)  # Number of copies currently available for borrowing
-    is_suspended = models.BooleanField(default=False)
+    # is_suspended = models.BooleanField(default=False)
 
     def __str__(self):  # String representation of the Book model
         return f"{self.title} by {self.author}"  # Returns title and author for easy identification
@@ -34,7 +34,6 @@ class Subscription(models.Model):  # Defining a model for user subscriptions
     subscription_start = models.DateTimeField(default=timezone.now)  # Subscription start time
     subscription_end = models.DateTimeField()  # Subscription end time
     is_active = models.BooleanField(default=True)
-    
     def save(self, *args, **kwargs):  # Overriding the save method to customize saving behavior
         # Set subscription duration (e.g., 30 days)
         if not self.subscription_end:  # Check if subscription_end is not set
@@ -56,7 +55,6 @@ class Subscription(models.Model):  # Defining a model for user subscriptions
     @property  # Decorator to create a read-only property
     def borrowing_set(self):  # Property to get borrowings related to the subscription
         return Borrowing.objects.filter(subscription=self)  # Returns all borrowings for this subscription
-
 
 class Borrowing(models.Model):  # Defining a model for book borrowing
     book = models.ForeignKey(Book, on_delete=models.CASCADE)  # Foreign key to Book model

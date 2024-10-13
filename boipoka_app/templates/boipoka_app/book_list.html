@@ -63,7 +63,7 @@
                                 {% if paidlist|get_item:book.pk %}
                                     <p class="text-white" style="background-color:#4B5320 !important">Wait for Approval.</p>
                                 {% else %}
-                                    <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-4 py-3  text-white text-2xl" style="background-color:#3CB371 !important">Pay Now</a></p>
+                                    <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-4 py-3  text-white " style="background-color:#3CB371 !important">Pay Now</a></p>
                                 {% endif %}
                             {% else %}
                                 <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
@@ -108,7 +108,7 @@
                     {% if paidlist|get_item:book.pk %}
                     <p class="text-orange-600">Your payment has been received! Your account will be reactivated upon admin approval.</p>
                     {% else %}  
-                        <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-3 py-3 underline text-white" style="background-color:#3CB371 !important">Pay Now</a></p>
+                        <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-3 py-3  text-white" style="background-color:#3CB371 !important">Pay Now</a></p>
                     {% endif %}
                 {% endif %}
             </div>

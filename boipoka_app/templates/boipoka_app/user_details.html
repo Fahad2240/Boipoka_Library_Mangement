@@ -15,7 +15,7 @@
                 </div>
                 <div class="mt-5 mb-5 flex flex-row gap-3 font-bold">
                     <p>Active Status : {% if context.subscription.is_active %} active {% else %} suspended {% endif %}
-                    <button  class=" px-2 py-1 text-white " style="background-color:#004953 !important"><a href="">Reactivate</a></button>
+                    {% if not context.subscription.is_active %}<button  class=" px-2 py-1 text-white " style="background-color:#004953 !important"><a href="">Reactivate</a></button>{% endif %}
                 </div>
                 <p>Maximum Books: {{ context.user.subscription.max_books }}</p>
                 <p>Subscription Starting Date: {{ context.user.subscription.subscription_start }}</p>
@@ -30,32 +30,36 @@
                     <input type="datetime-local" name="expire-date"  required>
                     <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription End Date</button>
                 </form>
-                <p class="text-center font-semibold">Borrowed Books</p>
-                {% if context.returned_books %}
-                    <p class="mt-5 font-bold" style="color:#FEBE10 !important">Returned Books : </p>
-                    <ul class="mt-5 text-slate-300 font-bold">
-                    {% for item in context.returned_books %}
-                        <div class="flex flex-row items-center gap-5">
-                                <li>{{ item.book.title }} - Due: {{ item.due_date }} Returned at - {{item.returned_at}}
-                                </li>
-                        </div>
-                    {% endfor %}
-                    </ul>
+                {% if context.borrowings %}
+                    <p class="text-center font-semibold">Borrowed Books</p>
+                    {% if context.returned_books %}
+                        <p class="mt-5 font-bold" style="color:#FEBE10 !important">Returned Books : </p>
+                        <ul class="mt-5 text-white font-bold">
+                        {% for item in context.returned_books %}
+                            <div class="flex flex-row items-center gap-5">
+                                    <li>{{ item.book.title }} - Due: {{ item.due_date }} Returned at - {{item.returned_at}}
+                                    </li>
+                            </div>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if context.notreturnedbooks %}
+                    <ul class="mt-5 text-white font-bold ">
+                            <p class="font-bold" style="color:#33006F !important">Not Returned Books : </p>
+                            {% for record in context.notreturnedbooks %}
+                            <div class="mt-5 flex flex-row items-center gap-5">
+                                    <li>{{ record.book.title }} - Due: {{ record.due_date }} {% if not record.returned_at %}(Not Returned){% endif %}
+                                    <form action="{% url 'boipoka_app:update_due_date' record.pk %}" method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="datetime-local" name="due_date"  required>
+                                        <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
+                                    </form>
+                                    </li>
+                            </div>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 {% endif %}
-                <ul class="mt-5 text-slate-300 font-bold ">
-                    <p class="font-bold" style="color:#33006F !important">Not Returned Books : </p>
-                    {% for borrowing in context.borrowings %}
-                    <div class="mt-5 flex flex-row items-center gap-5">
-                            <li>{{ borrowing.book.title }} - Due: {{ borrowing.due_date }} {% if not borrowing.returned_at %}(Not Returned){% endif %}
-                            <form action="{% url 'boipoka_app:update_due_date' borrowing.pk %}" method="post" style="display:inline;">
-                                {% csrf_token %}
-                                <input type="datetime-local" name="due_date"  required>
-                                <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
-                            </form>
-                            </li>
-                    </div>
-                    {% endfor %}
-                </ul>
                 {% if context.overdue_books %}
                     <p class="mt-5 text-center font-bold">Overdue Books:</p>
                     <ul class="mt-5 text-white font-bold ">
@@ -68,9 +72,46 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
+                {% if context.reissue_requests %}
+                <p class="mt-5 text-center font-bold">Reissue requests</p>
+                <ul class="mt-5 text-white font-bold ">
+                    <div class="flex gap-5">
+                        {% for item in context.reissue_requests %}
+                            <li>{{ item.book.title }} - Due: {{ item.due_date }}</li>
+                            <form action="{% url 'boipoka_app:reissue_grant' item.pk %}" method="post">
+                                {% csrf_token %}
+                                <button type=submit class="px-3 py-2 text-white" style="background-color:#1DB954 !important;">Accept</button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                </ul>
+                {% endif %}
+
+                {% if context.damaged_books %}
+                <p class="mt-5 text-center font-bold">Damaged/Lost Books</p>
+                <ul class=" gap-5 mt-5 text-white font-bold ">
+                    {% for item in context.damaged_books %}
+                        <div class="mt-5  flex flex-row gap-2" >
+                            <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
+                            {% if item.fine_paid %}
+                                <div>
+                                    {% if item.fine_paid_approved %}
+                                        <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                    {% else %}
+                                        <form action="{% url 'boipoka_app:manage_fineapprove' item.pk %}" method="post">
+                                            {% csrf_token %}
+                                            <button type=submit class="px-3 py-2 text-white" style="background-color:#452c63 !important;">Approve</button>
+                                        </form>
+                                    {% endif %} 
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </ul>
+                {% endif %}
                 
             {% else %}
-            <p>No Subscription</p>
+                <p>No Subscription</p>
             {% endif %}
             <div class='mt-6 flex flex-row justify-between gap-4'>
                 <button><a href="{% url 'boipoka_app:edit_user' pk=context.user.pk %}" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Edit User</a></button>

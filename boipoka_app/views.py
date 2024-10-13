@@ -101,7 +101,7 @@ def create_books_in_db(book_list):
 @login_required
 def book_list(request):
     # Retrieve the user's subscription
-    subscription = get_user_subscription(request.user)
+    subscription = Subscription.objects.filter(user=request.user).first()
     # If the user is not an admin and does not have a subscription, redirect them to the subscription page
     
     if  is_not_admin(request.user):
@@ -114,28 +114,45 @@ def book_list(request):
     borrow_info = {}
     isreported = {}
     paidlist={}
-
     # Create or update books in the database from external source
     create_books_in_db(fetch_books_data(0, 10))
 
     for book in books:
         reported_issue = Borrowing.objects.filter(user=request.user, book=book, is_damagedorlost=True).first()
-
+        if reported_issue is not None and reported_issue.fine_paid_approved == True :
+            reported_issue.delete()
     # If the book has been marked as damaged/lost for more than a day and the fine is not paid
         if reported_issue:
             if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
                 if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
-                    subscription = get_user_subscription(request.user)
-                    if subscription:
+                    if subscription is not None:
+                        print('kire')
                         subscription.is_active = False
                         subscription.save()
+                        # print(subscription.is_active)
+                else:
+                    if subscription is not None:
+                        print('hare')
+                        subscription.is_active = True
+                        subscription.save()
+            else:
+                if subscription is not None:
+                    print('hoise')
+                    subscription.is_active = True
+                    subscription.save()
             if reported_issue.fine_paid is True:
                 paidlist[book.pk]=True
+                if reported_issue.fine_paid_approved is True:
+                    reported_issue.delete()
             else:
                 paidlist[book.pk]=False
+        else:
+            if subscription is not None:
+                subscription.is_active = True
+                subscription.save()
             # Update isreported to track both the status and payment information
         # Check if the user has borrowed this book
-        is_borrowed = Borrowing.objects.filter(user=request.user, book=book).exists()
+        is_borrowed = Borrowing.objects.filter(user=request.user,returned_at__isnull=True ,book=book).exists()
         if is_borrowed:
             borrowed = Borrowing.objects.filter(user=request.user, book=book).first()
             isreported[book.pk] = borrowed.is_damagedorlost
@@ -149,6 +166,8 @@ def book_list(request):
         # Update availability if no copies are left
         if book.available_copies == 0:
             book_availability[book.pk] = False
+            
+        print(subscription.is_active)
 
     # Check if the user has a reactivation flag set in the session
     reactivation_flag = request.session.pop('reactivation_flag', False)
@@ -160,7 +179,7 @@ def book_list(request):
         'borrow_info': borrow_info,
         'isreported': isreported,
         'reactivation_flag': reactivation_flag,
-        'paidlist': paidlist
+        'paidlist': paidlist,
     })
 
 
@@ -187,16 +206,22 @@ def report_lost_or_damaged(request, pk):
         if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
             if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
                 if subscription:
+                    print('deactive')
                     subscription.is_active = False
                     subscription.save()
                     messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
             else:
                 if subscription:
+                    print('active1')
                     subscription.is_active=True
                     subscription.save()
+        else:
+            if subscription:
+                print('active2')
+                subscription.is_active=True
+                subscription.save()
     
     # Suspend subscription if incidents are 3 or more
-    subscription = get_user_subscription(request.user)
     if incident_count >= 3:
         if subscription:
             subscription.is_active = False  # Suspend the subscription
@@ -219,7 +244,14 @@ def manage_fines(request,pk):
     request.session['reactivation_flag'] = True  # This flag indicates that payment was made
     return redirect('boipoka_app:book_list')
     
-
+@user_passes_test(is_admin)
+def manage_fineapprove(request,pk):
+    borrowing=get_object_or_404(Borrowing,pk=pk)
+    user=borrowing.user 
+    if request.method == 'POST':
+        borrowing.fine_paid_approved=True
+        borrowing.save()
+    return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
 def book_details(request, pk):
     book = get_object_or_404(Book, pk=pk)
@@ -463,26 +495,35 @@ def return_book(request, pk):
         return redirect(redirect_to)
     return render(request, 'boipoka_app/return_book.html', {'book': book,'borrowing':borrowing})
     
-    
+@user_passes_test(is_admin)
+def reissue_grant(request,pk):
+    borrowing = get_object_or_404(Borrowing, pk=pk)
+    user=borrowing.user
+    if request.method == 'POST':
+        borrowing.due_date=borrowing.due_date+timedelta(days=14)
+        borrowing.reissue_state=False
+        borrowing.save()
+    return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
 def reissue_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
+    user = request.user
     # Retrieve the user's borrowing record for the specific book
-    borrowing = get_object_or_404(Borrowing, book=book, user=request.user, returned_at__isnull=True)
+    borrowing = get_object_or_404(Borrowing, book=book, user=user, returned_at__isnull=True)
 
     if request.method == 'POST':
         # Logic to extend the due date (you can customize the extension period)
         borrowing.reissue()
         # messages.success(request, 'The book has been successfully reissued. New due date: {}'.format(new_due_date.strftime('%Y-%m-%d')))
-        return redirect(f'{reverse("boipoka_app:book_details", args=[book.pk])}?test=true')
 
     # context = {
     #     'book': book,
     #     'borrowing': borrowing,
     # }
-    return redirect(reverse("boipoka_app:book_details", args=[book.pk]))
+    return redirect("boipoka_app:book_details",pk=book.pk)
 
 # Check if the user is an admin
+
 
 # Admin: Add a new book
 @user_passes_test(is_admin)
@@ -531,20 +572,20 @@ def users(request):
 @user_passes_test(is_admin)
 def user_details(request,pk):
     user = get_object_or_404(User, pk=pk)
-
-    subscription = Subscription.objects.filter(user=user)
     borrowings = Borrowing.objects.filter(user=user)
-    overdue_books = borrowings.filter(due_date__lt=timezone.now(), returned_at__isnull=True)
+    notreturnedbooks=borrowings.filter(returned_at__isnull=True)
     returned_books=borrowings.filter(returned_at__isnull=False)
-    damaged_books=Borrowing.objects.filter(is_damagedorlost=True)
-    reissue_requests =Borrowing.objects.filter(reissue_state=True)
-    # print(overdue_books)
+    subscription = Subscription.objects.filter(user=user).first()
+    overdue_books = borrowings.filter(due_date__lt=timezone.now(), returned_at__isnull=True)
+    damaged_books=Borrowing.objects.filter(user=user,is_damagedorlost=True)
+    reissue_requests =Borrowing.objects.filter(reissue_state=True,user=user)
     context={
         'user': user,
         'subscription': subscription,
         'borrowings': borrowings,
         'overdue_books': overdue_books,
         'returned_books': returned_books,
+        'notreturnedbooks':notreturnedbooks,
         'damaged_books': damaged_books,
         'reissue_requests': reissue_requests
     }
@@ -664,7 +705,7 @@ def delete_user(request, pk):
 @user_passes_test(is_admin)
 def delete_subscription(request, pk):
     user = get_object_or_404(User, pk=pk)
-    subscription = get_object_or_404(Subscription, user=user)
+    subscription = Subscription.objects.filter(user=user).first()
     subscription.delete()
     
     return redirect('boipoka_app:user_details',pk=user.pk)
