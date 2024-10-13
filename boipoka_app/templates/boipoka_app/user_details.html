@@ -15,7 +15,12 @@
                 </div>
                 <div class="mt-5 mb-5 flex flex-row gap-3 font-bold">
                     <p>Active Status : {% if context.subscription.is_active %} active {% else %} suspended {% endif %}
-                    {% if not context.subscription.is_active %}<button  class=" px-2 py-1 text-white " style="background-color:#004953 !important"><a href="">Reactivate</a></button>{% endif %}
+                    {% if not context.subscription.is_active %}
+                        <form action="{% url 'boipoka_app:reactivesubscription' context.subscription.pk %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button  type=submit class=" px-2 py-1 text-white " style="background-color:#004953 !important">Reactivate</button>
+                        </form>
+                    {% endif %}
                 </div>
                 <p>Maximum Books: {{ context.user.subscription.max_books }}</p>
                 <p>Subscription Starting Date: {{ context.user.subscription.subscription_start }}</p>
@@ -87,27 +92,37 @@
                 </ul>
                 {% endif %}
 
-                {% if context.damaged_books %}
-                <p class="mt-5 text-center font-bold">Damaged/Lost Books</p>
-                <ul class=" gap-5 mt-5 text-white font-bold ">
-                    {% for item in context.damaged_books %}
-                        <div class="mt-5  flex flex-row gap-2" >
-                            <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
-                            {% if item.fine_paid %}
-                                <div>
-                                    {% if item.fine_paid_approved %}
+                {% if context.damaged_books or context.damaged_history  %}
+                    <p class="mt-5 text-center font-bold">Damaged/Lost Books</p>
+                    <ul class=" gap-5 mt-5 text-white font-bold ">
+                        {% for item in context.damaged_books %}
+                            <div class="mt-5  flex flex-row gap-2" >
+                                <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
+                                {% if item.fine_paid %}
+                                    <div>
+                                        {% if item.fine_paid_approved %}
+                                            <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                        {% else %}
+                                            <form action="{% url 'boipoka_app:manage_fineapprove' item.pk %}" method="post">
+                                                {% csrf_token %}
+                                                <button type=submit class="px-3 py-2 text-white" style="background-color:#452c63 !important;">Approve</button>
+                                            </form>
+                                        {% endif %} 
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        {% if context.damaged_history %}
+                            {% for item in context.damaged_history %}
+                                <div class="mt-5  flex flex-row gap-2" >
+                                    <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
+                                    <div>
                                         <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
-                                    {% else %}
-                                        <form action="{% url 'boipoka_app:manage_fineapprove' item.pk %}" method="post">
-                                            {% csrf_token %}
-                                            <button type=submit class="px-3 py-2 text-white" style="background-color:#452c63 !important;">Approve</button>
-                                        </form>
-                                    {% endif %} 
+                                    </div>
                                 </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </ul>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
                 {% endif %}
                 
             {% else %}

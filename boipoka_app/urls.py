@@ -25,6 +25,7 @@ urlpatterns = [
     path('edit_book/<int:pk>/', views.edit_book, name='edit_book'),
     path('delete_book/<int:pk>/', views.delete_book, name='delete_book'),
     path('user_details/<int:pk>/', views.user_details, name='user_details'),
+    path('reactivesubscription/<int:pk>/', views.reactivesubscription, name='reactivesubscription'),
     path('reissue_grants/<int:pk>/', views.reissue_grant,name='reissue_grant'),
     path('user/send_reminder/<int:pk>/', views.send_reminder, name='send_reminder'),
     path('user/edit_user/<int:pk>/', views.edit_user, name='edit_user'),

@@ -4,3 +4,4 @@ from .models import *
 admin.site.register(Book)
 admin.site.register(Subscription)
 admin.site.register(Borrowing)
+admin.site.register(DamagedorLostHistory)

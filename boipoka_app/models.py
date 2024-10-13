@@ -109,3 +109,13 @@ class Borrowing(models.Model):  # Defining a model for book borrowing
         self.save()
     def __str__(self):  # String representation of the Borrowing model
         return f"{self.user.username} borrowed {self.book.title} on {self.borrowed_on} by {self.subscription}"  # Returns borrowing details
+
+class DamagedorLostHistory(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='damaged_books')
+    fine_paid=models.BooleanField(default=False)
+    fine_paid_approved=models.BooleanField(default=False)
+    fine_paid_at=models.DateTimeField(null=True, blank=True)
+    isdeleted=models.BooleanField(default=False)
+    def save(self, *args, **kwargs):  # Overriding the save method for Borrowing
+        super(DamagedorLostHistory, self).save(*args, **kwargs) 
