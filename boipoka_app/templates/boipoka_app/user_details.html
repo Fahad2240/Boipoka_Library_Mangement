@@ -44,6 +44,10 @@
                             <div class="flex flex-row items-center gap-5">
                                     <li>{{ item.book.title }} - Due: {{ item.due_date }} Returned at - {{item.returned_at}}
                                     </li>
+                                    <form action="{% url 'boipoka_app:send_returned_notifications' context.user.pk %}" method="post" >
+                                        {% csrf_token %}
+                                        <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                    </form>
                             </div>
                         {% endfor %}
                         </ul>
@@ -59,7 +63,12 @@
                                         <input type="datetime-local" name="due_date"  required>
                                         <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
                                     </form>
+                                    <form action="{% url 'boipoka_app:send_borrowed_notifications' context.user.pk %}" method="post" >
+                                        {% csrf_token %}
+                                        <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                    </form>
                                     </li>
+
                             </div>
                             {% endfor %}
                         </ul>
@@ -101,13 +110,26 @@
                                 {% if item.fine_paid %}
                                     <div>
                                         {% if item.fine_paid_approved %}
-                                            <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                            <div class="flex gap-2">
+                                                <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                                <form action="{% url 'boipoka_app:send_payment_approval' context.user.pk %}" method="post" >
+                                                    {% csrf_token %}
+                                                    <button type="submit" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                                </form>
+                                            </div>
                                         {% else %}
                                             <form action="{% url 'boipoka_app:manage_fineapprove' item.pk %}" method="post">
                                                 {% csrf_token %}
                                                 <button type=submit class="px-3 py-2 text-white" style="background-color:#452c63 !important;">Approve</button>
                                             </form>
                                         {% endif %} 
+                                    </div>
+                                {% else %}
+                                    <div>
+                                        <form action="{% url 'boipoka_app:send_payment_needed' context.user.pk %}" method="post" >
+                                            {% csrf_token %}
+                                            <button type="submit" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Send Reminder</button>
+                                        </form>
                                     </div>
                                 {% endif %}
                             </div>

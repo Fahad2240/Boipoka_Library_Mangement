@@ -142,21 +142,39 @@ def book_list(request):
                 reported_issue.delete()
     # If the book has been marked as damaged/lost for more than a day and the fine is not paid
         if reported_issue:
-            if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
+            print(timezone.now() > reported_issue.damagedlostat + timedelta(days=1))
+            if (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
                 if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
                     if subscription is not None:
-                        # print('kire')
+                        print('kire')
                         subscription.is_active = False
                         subscription.save()
-                        # print(subscription.is_active)
+                        subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+                        message = (
+                            f'Dear {subscription.user.username},\n\n'
+                            f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fines.\n'
+                            f'To reactivate your subscription, please pay the unpaid fines as soon as possible".\n\n'
+                            f'Thank you very much .\n\n'
+                            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+                        )
+                        recipient= subscription.user.email
+                        reply_to_address = ['boipoka_admin@boipoka.com']
+                    
+                    
+                        separate_thread = threading.Thread(
+                            target=send_email_threaded_single,
+                            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+                        )
+                        separate_thread.start()
+                        print(subscription.is_active)
                 else:
                     if subscription is not None:
-                        # print('hare')
+                        print('hare')
                         subscription.is_active = True
                         subscription.save()
             else:
                 if subscription is not None:
-                    # print('hoise')
+                    print('hoise')
                     subscription.is_active = True
                     subscription.save()
             if reported_issue.fine_paid is True:
@@ -165,10 +183,7 @@ def book_list(request):
                 #     reported_issue.delete()
             else:
                 paidlist[book.pk]=False
-        else:
-            if subscription is not None:
-                subscription.is_active = True
-                subscription.save()
+        
             # Update isreported to track both the status and payment information
         # Check if the user has borrowed this book
         is_borrowed = Borrowing.objects.filter(user=request.user,returned_at__isnull=True ,book=book).exists()
@@ -218,36 +233,50 @@ def report_lost_or_damaged(request, pk):
 
     # Check the number of lost/damaged reports for the user
     incident_count = Borrowing.objects.filter(user=request.user, is_damagedorlost=True).count() 
-    reported_issue = Borrowing.objects.filter(user=request.user, book__pk=pk, is_damagedorlost=True).first()
 
     # If the book has been marked as damaged/lost for more than a day and the fine is not paid
-    if reported_issue:
-        if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
-            if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
-                if subscription:
-                    print('deactive')
-                    subscription.is_active = False
-                    subscription.save()
-                    messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
-            else:
-                if subscription:
-                    print('active1')
-                    subscription.is_active=True
-                    subscription.save()
-        else:
-            if subscription:
-                print('active2')
-                subscription.is_active=True
-                subscription.save()
+    # if reported_issue:
+    #     if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
+    #         if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
+    #             if subscription:
+    #                 print('deactive')
+    #                 # messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
+    #         else:
+    #             if subscription:
+    #                 print('active1')
+    #                 subscription.is_active=True
+    #                 subscription.save()
+    #     else:
+    #         if subscription:
+    #             print('active2')
+    #             subscription.is_active=True
+    #             subscription.save()
     
     # Suspend subscription if incidents are 3 or more
     if incident_count >= 3:
         if subscription:
             subscription.is_active = False  # Suspend the subscription
             subscription.save()
-            messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
+            subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+            message = (
+                f'Dear {subscription.user.username},\n\n'
+                f'Your subscription plan {subscription.subscription_type} has been suspended due to multiple lost/damaged reports..\n'
+                f'Now, you cannot access login session.To reactivate your subscription, please contact with the Boipoka admin as soon as possible.\n\n'
+                f'Thank you very much .\n\n'
+                f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            )
+            recipient = subscription.user.email
+            reply_to_address = ['boipoka_admin@boipoka.com']
+            
+            
+            separate_thread = threading.Thread(
+                target=send_email_threaded_single,
+                args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+            )
+            separate_thread.start()
+            # messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
             # Send a notification email here if needed
-            return redirect('boipoka_app:book_list')
+            return redirect('boipoka_app:login_view')
 
     # Display a success message and redirect back to the book list
     messages.success(request, f"The book '{borrowing.book.title}' has been reported as lost/damaged. A fine of 500 BDT has been applied.")
@@ -620,6 +649,24 @@ def reactivesubscription(request,pk):
     if request.method == 'POST':
         subscription.is_active=True
         subscription.save()
+        
+        subject = f'Subscritpion Reactivation : {subscription.user.username} s Subscription Has been Activated'
+        message = (
+            f'Dear {subscription.user.username},\n\n'
+            f'We have reactivated your subscription plan {subscription.subscription_type} successfully.\n'
+            f'From now, you can have full access of the "Boipoka Book Borrowing System".\n\n'
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient_list = [subscription.user.email]
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+        )
+        separate_thread.start()
         # logger.info(f'Activated the subscription for user {subscription.user.username}')
     return redirect('boipoka_app:user_details', pk=subscription.user.pk)
 
@@ -671,6 +718,25 @@ def send_email_threaded(subject: str, message: str, sender_email: str, toaddr: l
     except Exception as e:
         logger.error(f"An error occurred while sending email: {str(e)}")
         raise Exception("Something went wrong with sending email.")
+    
+def send_email_threaded_single(subject: str, message: str, sender_email: str, toaddr, reply_to: list = None):
+    """Send emails asynchronously in a separate thread with a reply-to address."""
+    try:
+        # Create an EmailMessage instance
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=sender_email,
+            to=[toaddr] if isinstance(toaddr, str) else toaddr,
+            reply_to=reply_to  # Adding reply_to field here
+        )
+        email.send(fail_silently=False)  # Send the email
+        logger.info(f"Email sent to {toaddr} with subject: '{subject}'")
+    except SMTPException as e:
+        logger.error(f"Failed to send email: {str(e)}")
+    except Exception as e:
+        logger.error(f"An error occurred while sending email: {str(e)}")
+        raise Exception("Something went wrong with sending email.")
 
 @user_passes_test(is_admin)
 def send_reminder(request, pk):
@@ -681,7 +747,7 @@ def send_reminder(request, pk):
             
     if not borrowings.exists():
         # messages.warning(request, f'No overdue books found for user ID {pk}.')
-        return redirect('boipoka_app:user_details')
+        return redirect('boipoka_app:user_details',pk=user.pk)
     
     penalty_rate = 0
     if subscription:
@@ -716,6 +782,73 @@ def send_reminder(request, pk):
 
     # messages.success(request, f'Reminder(s) sent to {", ".join([b.user.username for b in borrowings])} for their overdue books.')
     return redirect('boipoka_app:user_details', pk=pk)
+
+
+@user_passes_test(is_admin)
+def send_returned_notifications(request,pk):
+    user=get_object_or_404(User,pk=pk)
+    returnedbooks = Borrowing.objects.filter(user=user, returned_at__isnull=False)
+    if not returnedbooks.exists():
+        return redirect('boipoka_app:user_details',pk=user.pk)
+    
+    for item in returnedbooks:
+        
+        due_date = item.due_date
+        returntime=item.returned_at
+        subject = f'Returned Successfull: {item.book.title}'
+        message = (
+            f'Dear {item.user.username},\n\n'
+            f'You have successfully returned the book "{item.book.title}"  at {returntime} which is within your due date {due_date}. '
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient_list = [item.user.email]
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+        )
+        separate_thread.start()
+        
+    return redirect('boipoka_app:user_details', pk=user.pk)    
+    
+    
+@user_passes_test(is_admin)
+def send_borrowed_notifications(request,pk):
+    user=get_object_or_404(User,pk=pk)
+    borrowings = Borrowing.objects.filter(user=user, returned_at__isnull=True)
+
+    if not borrowings.exists():
+        return redirect('boipoka_app:user_details',pk=user.pk)
+    
+    for item in borrowings:
+        
+        due_date = item.due_date
+        subject = f'Borrowed Book Info Registered: {item.book.title}'
+        message = (
+            f'Dear {item.user.username},\n\n'
+            f'You have successfully borrowed the book "{item.book.title}" on having {item.subscription} plan at {item.borrowed_on}. Your due date is {due_date}. '
+            f'Please try to return the book as early as possible within you due time .\n\n'
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient_list = [item.user.email]
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+        )
+        separate_thread.start()
+        
+    return redirect('boipoka_app:user_details', pk=user.pk)    
+
+    
+
+
 @user_passes_test(is_admin)
 def edit_user(request, pk):
     user = get_object_or_404(User, pk=pk)
@@ -729,6 +862,65 @@ def edit_user(request, pk):
 
     return render(request, 'boipoka_app/edit_user.html', {'user': user})
 
+@user_passes_test(is_admin)
+def send_payment_needed(request, pk):
+    user=get_object_or_404(User,pk=pk)
+    reported = Borrowing.objects.filter(user=user,is_damagedorlost=True,fine_paid=False)
+
+    if not reported.exists():
+        return redirect('boipoka_app:user_details',pk=user.pk)
+    
+    for item in reported:
+        
+        subject = f'Reminder - Payment Needed for Prohibiting the Subscription Being Suspended for Damaged/Lost Event of the Book : {item.book.title}'
+        message = (
+            f'Dear {item.user.username},\n\n'
+            f'Attention! It is mandatory to pay  500 TK within 1 day from the reported time {item.damagedlostat} for being damaged or lost of the book "{item.book.title}" .'
+            f'Otherwise, we will be very strict to make your subscription suspended until you pay for it .\n\n'
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient_list = [item.user.email]
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+        )
+        separate_thread.start()
+        
+    return redirect('boipoka_app:user_details', pk=user.pk)    
+
+@user_passes_test(is_admin)
+def send_payment_approval(request, pk):
+    user=get_object_or_404(User,pk=pk)
+    approved = Borrowing.objects.filter(user=user,is_damagedorlost=True,fine_paid_approved=True)
+
+    if not approved.exists():
+        return redirect('boipoka_app:user_details',pk=user.pk)
+    
+    for item in approved:
+        
+        subject = f'Payment Successfully Approved - Payment Approved for the Damaged/Lost Event of the Book : {item.book.title}'
+        message = (
+            f'Dear {item.user.username},\n\n'
+            f'We have recieved 500 TK as your payment for the damaged/lost event of the book "{item.book.title}" on {item.fine_paid_at} and approved it.'
+            f'If you are suspended we will reactivate your subscription very soon .\n\n'
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient_list = [item.user.email]
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+        )
+        separate_thread.start()
+        
+    return redirect('boipoka_app:user_details', pk=user.pk)    
 @user_passes_test(is_admin)
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
