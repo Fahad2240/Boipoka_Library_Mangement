@@ -681,7 +681,6 @@ def return_book(request, pk):
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
-        returntime = borrowing.returned_at.strftime("%b. %d, %Y, %I:%M %p")
         returntime = returntime.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
         message=f'Your have successfully returned the book {book.title} at {returntime}'
