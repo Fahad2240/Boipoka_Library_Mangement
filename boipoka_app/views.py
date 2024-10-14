@@ -702,16 +702,35 @@ def reissue_grant(request,pk):
         borrowing.due_date=borrowing.due_date+timedelta(days=14)
         borrowing.reissue_state=False
         borrowing.save()
-        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date} .'
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
+        borrowing.due_date=borrowing.due_date.astimezone(dhaka_timezone)
+        borrowing.due_date=borrowing.due_date.strftime("%b. %d, %Y, %I:%M %p")
+        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date} .'
         Notifications.objects.create(
             subscriber=user,
             message=message,
             timestamp=formatted_time,
         )
+        subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+        message = (
+            f'Dear {borrowing.user.username},\n\n'
+            f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date}.\n'
+            f'Thank you very much .\n\n'
+            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+        )
+        recipient = borrowing.user.email
+        reply_to_address = ['boipoka_admin@boipoka.com']
+        
+        
+        separate_thread = threading.Thread(
+            target=send_email_threaded_single,
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+        )
+        separate_thread.start()
+        
     return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
 def reissue_book(request, pk):
