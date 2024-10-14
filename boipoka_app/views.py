@@ -17,7 +17,7 @@ from django.core.mail import send_mail  # Import send_mail function for sending 
 from django.core.files.base import ContentFile  # Import ContentFile for handling file content
 from urllib.parse import urlparse  # Import urlparse for URL manipulation
 from django.contrib.auth import get_user_model  # Import function to get User model
-
+import pytz
 
 def is_admin(user):
     """
@@ -192,6 +192,11 @@ def book_list(request):
                         )
                         separate_thread.start()
                         message=f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fine. '
+                        
+                        
+                        
+        
+                        
                         Notifications.objects.create(
                             subscriber=request.user,
                             message=message,
@@ -505,11 +510,19 @@ def borrow_book(request, pk):
     book.save()
     borrow_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().borrowed_on
     due_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().due_date
+    dhaka_timezone = pytz.timezone('Asia/Dhaka')
+    due_time = due_time.astimezone(dhaka_timezone)
+    due_time = due_time.strftime("%b. %d, %Y, %I:%M %p")
+    borrow_time = borrow_time.astimezone(dhaka_timezone)
+    borrow_time   = borrow_time.strftime("%b. %d, %Y, %I:%M %p")
+    current_time_in_dhaka = timezone.now()
+    current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+    formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
     message=f'You have successfully borrowed the book {book.title} at {borrow_time}\n.Your have to return this book within {due_time}\n.Otherwise, you will be fined .'
     Notifications.objects.create(
         subscriber=request.user,
         message=message,
-        timestamp=timezone.now(),
+        timestamp=formatted_time,
     )
     # messages.success(request, "You have successfully borrowed the book.")
     return redirect('boipoka_app:book_details', pk=book.pk)  # Redirect back to the book details page
@@ -597,10 +610,14 @@ def change_subscription(request):
                 )
                 
                 message=f'Your can not downgrade your subscription  from {oldsubtype} to {newtype} until you return at least {books_to_return} books.'
+                current_time_in_dhaka = timezone.now()
+                dhaka_timezone = pytz.timezone('Asia/Dhaka')
+                current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+                formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
                 Notifications.objects.create(
                     subscriber=request.user,
                     message=message,
-                    timestamp=timezone.now(),
+                    timestamp=formatted_time,
                 )
                 next_url=request.POST.get('next','boipoka_app:book_list')
                 return redirect(next_url)
@@ -608,10 +625,14 @@ def change_subscription(request):
             if new_subscription_type == subscription.subscription_type:
                 messages.error(request, "You are already using the selected subscription type.")
                 message=f'You are already using the selected subscription type.'
+                current_time_in_dhaka = timezone.now()
+                dhaka_timezone = pytz.timezone('Asia/Dhaka')
+                current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+                formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
                 Notifications.objects.create(
                     subscriber=request.user,
                     message=message,
-                    timestamp=timezone.now(),
+                    timestamp=formatted_time,
                 )
                 
                 next_url=request.POST.get('next','boipoka_app:book_list')
@@ -624,11 +645,17 @@ def change_subscription(request):
             # Save the updated subscription
             subscription.save()
             message=f'Your subscription has been {info} from {oldsubtype} to {newtype} successfully.'
+            current_time_in_dhaka = timezone.now()
+            dhaka_timezone = pytz.timezone('Asia/Dhaka')
+            current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+            formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
             Notifications.objects.create(
                 subscriber=request.user,
                 message=message,
-                timestamp=timezone.now(),
+                timestamp=formatted_time,
             )
+            
+            print(formatted_time)
             # messages.success(request, "Subscription updated successfully.")
             next_url=request.POST.get('next','boipoka_app:book_list')
             return redirect(next_url)
@@ -651,11 +678,17 @@ def return_book(request, pk):
         borrowing.return_book()
         borrowing.save()
         # messages.success(request, 'You have successfully returned this book.')
-        message=f'Your have successfully returned the book {book.title} at {borrowing.returned_at}'
+        dhaka_timezone = pytz.timezone('Asia/Dhaka')
+        current_time_in_dhaka = timezone.now()
+        current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+        returntime = borrowing.returned_at.strftime("%b. %d, %Y, %I:%M %p")
+        returntime = returntime.astimezone(dhaka_timezone)
+        formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
+        message=f'Your have successfully returned the book {book.title} at {returntime}'
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
-            timestamp=timezone.now(),
+            timestamp=formatted_time,
         )
         redirect_to = request.POST.get('next', 'boipoka_app:book_list')
         return redirect(redirect_to)
@@ -670,10 +703,14 @@ def reissue_grant(request,pk):
         borrowing.reissue_state=False
         borrowing.save()
         message=f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date} .'
+        dhaka_timezone = pytz.timezone('Asia/Dhaka')
+        current_time_in_dhaka = timezone.now()
+        current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+        formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
         Notifications.objects.create(
             subscriber=user,
             message=message,
-            timestamp=timezone.now(),
+            timestamp=formatted_time,
         )
     return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
@@ -687,10 +724,14 @@ def reissue_book(request, pk):
         # Logic to extend the due date (you can customize the extension period)
         borrowing.reissue()
         message=f'Your reissue request for the book "{borrowing.book.title}" has successfully sent to the Admin.'
+        dhaka_timezone = pytz.timezone('Asia/Dhaka')
+        current_time_in_dhaka = timezone.now()
+        current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
+        formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
-            timestamp=timezone.now(),
+            timestamp=formatted_time,
         )
         # messages.success(request, 'The book has been successfully reissued. New due date: {}'.format(new_due_date.strftime('%Y-%m-%d')))
 
@@ -798,6 +839,7 @@ def reactivesubscription(request,pk):
         )
         separate_thread.start()
         message=f'Your subscription of  {subscription} plan has been susccessfully reactivated by Admin \n.'
+        
         Notifications.objects.create(
             subscriber=subscription.user,
             message=message,
@@ -903,7 +945,7 @@ def send_reminder(request, pk):
         subject = f'Reminder: Overdue Book - {borrowing.book.title}'
         message = (
             f'Dear {borrowing.user.username},\n\n'
-            f'This is a reminder that the book "{borrowing.book.title}" is overdue. '
+            f'This is a reminder that the book "{borrowing.book.title}" is overdued. '
             f'Please return it as soon as possible.\n\n'
             f'Penalty for overdue: {penalty} tk (based on your {subscription.subscription_type} subscription).\n\n'
         )
@@ -1002,16 +1044,19 @@ def edit_user(request, pk):
 def send_payment_needed(request, pk):
     user=get_object_or_404(User,pk=pk)
     reported = Borrowing.objects.filter(user=user,is_damagedorlost=True,fine_paid=False)
-
+    dhaka_timezone = pytz.timezone('Asia/Dhaka')
     if not reported.exists():
         return redirect('boipoka_app:user_details',pk=user.pk)
     
     for item in reported:
         
+        reporttime=item.damagedlostat
+        reporttime = reporttime.astimezone(dhaka_timezone)
+        reporttime= reporttime.strftime("%b. %d, %Y, %I:%M %p")
         subject = f'Reminder - Payment Needed for Prohibiting the Subscription Being Suspended for Damaged/Lost Event of the Book : {item.book.title}'
         message = (
             f'Dear {item.user.username},\n\n'
-            f'Attention! It is mandatory to pay  500 TK within 1 day from the reported time {item.damagedlostat} for being damaged or lost of the book "{item.book.title}" .'
+            f'Attention! It is mandatory to pay  500 TK within 1 day from the reported time {reporttime} for being damaged or lost of the book "{item.book.title}" .'
             f'Otherwise, we will be very strict to make your subscription suspended until you pay for it .\n\n'
             f'Thank you very much .\n\n'
             f'\n\n Best regards, \n\n Boipoka Admin\n\n'
