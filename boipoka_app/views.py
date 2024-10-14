@@ -32,8 +32,27 @@ def is_admin(user):
     return user.is_staff
 def is_not_admin(user):
     return not user.is_staff
+
+@login_required
+def notify_user(request):
+    notifications=Notifications.objects.filter(subscriber=request.user)
+    return render(request,'boipoka_app/notification.html',{'notifications':notifications})
+
 def index(request):
     return render(request,'boipoka_app/index.html')
+
+@login_required
+def makeunread(request,pk):
+    notification=get_object_or_404(Notifications,pk=pk)
+    notification.is_read=True
+    notification.save()
+    return redirect('boipoka_app:notifications')
+
+@login_required
+def deletenotifcation(request,pk):
+    notification=get_object_or_404(Notifications,pk=pk)
+    notification.delete()
+    return redirect('boipoka_app:notifications')
 
 def register(request):
     if request.user.is_authenticated:
@@ -166,6 +185,12 @@ def book_list(request):
                             args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
                         )
                         separate_thread.start()
+                        message=f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fine. '
+                        Notifications.objects.create(
+                            subscriber=request.user,
+                            message=message,
+                            timestamp=timezone.now(),
+                        )
                         print(subscription.is_active)
                 else:
                     if subscription is not None:
@@ -230,7 +255,12 @@ def report_lost_or_damaged(request, pk):
     # Mark the book as damaged or lost
     borrowing.is_damagedorlost = True
     borrowing.save()
-
+    message=f'The book "{borrowing.book.title}" has been reported as lost/damaged. A fine of 500 BDT has been applied.'
+    Notifications.objects.create(
+        subscriber=request.user,
+        message=message,
+        timestamp=timezone.now(),
+    )
     # Check the number of lost/damaged reports for the user
     incident_count = Borrowing.objects.filter(user=request.user, is_damagedorlost=True).count() 
 
@@ -275,6 +305,12 @@ def report_lost_or_damaged(request, pk):
             )
             separate_thread.start()
             # messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
+            message=f'Your subscription has been suspended due to multiple lost/damaged reports\n.Please contact with the Boipoka admin as soon as possible'
+            Notifications.objects.create(
+                subscriber=request.user,
+                message=message,
+                timestamp=timezone.now(),
+            )
             # Send a notification email here if needed
             return redirect('boipoka_app:login')
 
@@ -287,6 +323,12 @@ def manage_fines(request,pk):
     reported=get_object_or_404(Borrowing,user=request.user,is_damagedorlost=True,book__pk=pk)
     reported.fine_paid=True
     reported.save()
+    message=f'We have successfully receive the fine for being damged/lost of the book "{reported.book.title}"\n.Please wait for the approval '
+    Notifications.objects.create(
+        subscriber=request.user,
+        message=message,
+        timestamp=timezone.now(),
+    )
     #Set a flag in the session indicating the payment
     # if reported.fine_paid == True:
     request.session['reactivation_flag'] = True  # This flag indicates that payment was made
@@ -299,6 +341,12 @@ def manage_fineapprove(request,pk):
     if request.method == 'POST':
         borrowing.fine_paid_approved=True
         borrowing.save()
+        message=f'You have approved your payment for being damaged/lost of the book "{borrowing.book.title}" .'
+        Notifications.objects.create(
+            subscriber=user,
+            message=message,
+            timestamp=timezone.now(),
+        )
     return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
 def book_details(request, pk):
@@ -350,6 +398,14 @@ def new_subscription_creation(request):
             subscription.subscription_start = timezone.now()
             subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
             subscription.save()
+            subtype=Subscription(user=request.user).subscription_type
+            end=Subscription(user=request.user).subscription_end
+            message=f'Your subscription of  {subtype} plan has been created susccessfully \n.It will end on {end}'
+            Notifications.objects.create(
+                subscriber=request.user,
+                message=message,
+                timestamp=timezone.now(),
+            )
         return redirect('boipoka_app:book_list')
     else:
         form = SubscriptionForm()
@@ -422,6 +478,12 @@ def borrow_book(request, pk):
     if borrowed_books_count == subscription.max_books:
         # borrowed_books_count+=1)
         # messages.error(request, "Sorry, you have reached the limit of borrowed books for your subscription.")
+        message=f'Sorry, you have reached the limit of borrowed books for your subscription'
+        Notifications.objects.create(
+            subscriber=request.user,
+            message=message,
+            timestamp=timezone.now(),
+        )
         return redirect('boipoka_app:book_details', pk=book.pk)
     if book.available_copies <= 0:
         messages.error(request, "No copies of the book are available to borrow.")
@@ -435,7 +497,14 @@ def borrow_book(request, pk):
     )
     book.available_copies -= 1
     book.save()
-
+    borrow_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().borrowed_on
+    due_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().due_date
+    message=f'You have successfully borrowed the book {book.title} at {borrow_time}\n.Your have to return this book within {due_time}\n.Otherwise, you will be fined .'
+    Notifications.objects.create(
+        subscriber=request.user,
+        message=message,
+        timestamp=timezone.now(),
+    )
     # messages.success(request, "You have successfully borrowed the book.")
     return redirect('boipoka_app:book_details', pk=book.pk)  # Redirect back to the book details page
 
@@ -490,6 +559,7 @@ def change_subscription(request):
     # Get the subscription object for the logged-in user
     subscription = get_object_or_404(Subscription, user=request.user)
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
+    print(borrowed_books_count)
     if request.method == 'POST':
         # Get the new subscription type from the submitted form
         new_subscription_type = request.POST.get('subscription_type')
@@ -505,20 +575,54 @@ def change_subscription(request):
             elif new_subscription_type == 'VIP':
                 new_max_books = 10
                 
-                
+            oldsubtype=subscription.subscription_type
+            newtype=new_subscription_type
+            info =''
+            if new_max_books < subscription.max_books:
+                info='downgraded'
+            elif new_max_books > subscription.max_books:
+                info='upgraded'
+            
             if new_max_books <= borrowed_books_count:
                 books_to_return = (borrowed_books_count - new_max_books)+1
                 messages.error(
                     request,
                     f"You need to return {books_to_return} book(s) to downgrade to the {new_subscription_type} plan."
                 )
+                
+                message=f'Your can not downgrade your subscription  from {oldsubtype} to {newtype} until you return at least {books_to_return} books.'
+                Notifications.objects.create(
+                    subscriber=request.user,
+                    message=message,
+                    timestamp=timezone.now(),
+                )
                 next_url=request.POST.get('next','boipoka_app:book_list')
                 return redirect(next_url)
 
+            if new_subscription_type == subscription.subscription_type:
+                messages.error(request, "You are already using the selected subscription type.")
+                message=f'You are already using the selected subscription type.'
+                Notifications.objects.create(
+                    subscriber=request.user,
+                    message=message,
+                    timestamp=timezone.now(),
+                )
+                
+                next_url=request.POST.get('next','boipoka_app:book_list')
+                return redirect(next_url)
+            
+            
+            
             subscription.subscription_type = new_subscription_type
             subscription.max_books = new_max_books
             # Save the updated subscription
             subscription.save()
+            message=f'Your subscription has been {info} from {oldsubtype} to {newtype} successfully.'
+            Notifications.objects.create(
+                subscriber=request.user,
+                message=message,
+                timestamp=timezone.now(),
+            )
             # messages.success(request, "Subscription updated successfully.")
             next_url=request.POST.get('next','boipoka_app:book_list')
             return redirect(next_url)
@@ -536,11 +640,17 @@ def change_subscription(request):
 @login_required
 def return_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
-    borrowing=get_object_or_404(Borrowing,book=book,user=request.user,returned_at__isnull=True)
+    borrowing = Borrowing.objects.filter(book=book, user=request.user, returned_at__isnull=True).first()
     if request.method == 'POST':
         borrowing.return_book()
         borrowing.save()
         # messages.success(request, 'You have successfully returned this book.')
+        message=f'Your have successfully returned the book {book.title} at {borrowing.returned_at}'
+        Notifications.objects.create(
+            subscriber=request.user,
+            message=message,
+            timestamp=timezone.now(),
+        )
         redirect_to = request.POST.get('next', 'boipoka_app:book_list')
         return redirect(redirect_to)
     return render(request, 'boipoka_app/return_book.html', {'book': book,'borrowing':borrowing})
@@ -553,6 +663,12 @@ def reissue_grant(request,pk):
         borrowing.due_date=borrowing.due_date+timedelta(days=14)
         borrowing.reissue_state=False
         borrowing.save()
+        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date} .'
+        Notifications.objects.create(
+            subscriber=user,
+            message=message,
+            timestamp=timezone.now(),
+        )
     return redirect('boipoka_app:user_details',pk=user.pk)
 @login_required
 def reissue_book(request, pk):
@@ -560,10 +676,16 @@ def reissue_book(request, pk):
     user = request.user
     # Retrieve the user's borrowing record for the specific book
     borrowing = get_object_or_404(Borrowing, book=book, user=user, returned_at__isnull=True)
-
+    
     if request.method == 'POST':
         # Logic to extend the due date (you can customize the extension period)
         borrowing.reissue()
+        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully sent to the Admin.'
+        Notifications.objects.create(
+            subscriber=request.user,
+            message=message,
+            timestamp=timezone.now(),
+        )
         # messages.success(request, 'The book has been successfully reissued. New due date: {}'.format(new_due_date.strftime('%Y-%m-%d')))
 
     # context = {
@@ -669,6 +791,12 @@ def reactivesubscription(request,pk):
             args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
         )
         separate_thread.start()
+        message=f'Your subscription of  {subscription} plan has been susccessfully reactivated by Admin \n.'
+        Notifications.objects.create(
+            subscriber=subscription.user,
+            message=message,
+            timestamp=timezone.now(),
+        )
         # logger.info(f'Activated the subscription for user {subscription.user.username}')
     return redirect('boipoka_app:user_details', pk=subscription.user.pk)
 

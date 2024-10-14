@@ -20,7 +20,7 @@
         <button type="submit" class="mt-10 text-white font-semibold px-3 py-2" style="background-color:#452c63 !important">Search</button>
     </form>
     <div class="mt-20">{% comment %}#4B0082{% endcomment %}
-    <ul class="text-2xl px-10 py-9 z-20 mt-28 text-white  rounded " style="position:absolute; background-color:#452c63  !important;left:20%;right:20%;margin:auto;">
+        <ul class="text-2xl px-10 py-9 z-20 mt-28 text-white  rounded " style="position:absolute; background-color:#452c63  !important;left:20%;right:20%;margin:auto;">
             {% for entry in history %}
                 <div class=" py-10">
                     <li>
@@ -45,8 +45,9 @@
                     </li>
                 </div>
             {% endfor %}
+        </ul>
     </div>
-</div>
+</div> 
 
 
 {% endblock %}

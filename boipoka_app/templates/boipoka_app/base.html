@@ -62,6 +62,11 @@
             <a href="{% url 'boipoka_app:reading_history' %}">ReadList History</a>
         </button>
         {% endif %}
+        {% if not request.user.is_superuser %}
+            <button class=" px-6 py-2 text-white font-bold" style="background-color:#FEBE10 !important;">
+                <a href="{% url 'boipoka_app:notifications' %}">Notifications{% if unread_notifications_count %}<sup class="px-3 py-2 font-bold" style="background-color:red !important;color:white !important;border-radius:100% !important;">{{unread_notifications_count}}</sup>{% endif %}</a>
+            </button>
+        {% endif %}
     {% endif %}
 </nav>
 

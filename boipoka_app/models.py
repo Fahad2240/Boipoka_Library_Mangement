@@ -119,3 +119,13 @@ class DamagedorLostHistory(models.Model):
     isdeleted=models.BooleanField(default=False)
     def save(self, *args, **kwargs):  # Overriding the save method for Borrowing
         super(DamagedorLostHistory, self).save(*args, **kwargs) 
+        
+        
+        
+class Notifications(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    class Meta: 
+        ordering = ['-timestamp']
