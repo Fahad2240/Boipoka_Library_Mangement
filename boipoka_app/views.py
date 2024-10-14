@@ -36,7 +36,13 @@ def is_not_admin(user):
 @login_required
 def notify_user(request):
     notifications=Notifications.objects.filter(subscriber=request.user)
-    return render(request,'boipoka_app/notification.html',{'notifications':notifications})
+    unclickable={}
+    for notify in notifications:
+        if notify.is_read == True:
+            unclickable[notify.pk]=False
+        else:
+            unclickable[notify.pk]=True
+    return render(request,'boipoka_app/notification.html',{'notifications':notifications, 'unclickable':unclickable	})
 
 def index(request):
     return render(request,'boipoka_app/index.html')

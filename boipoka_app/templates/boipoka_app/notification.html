@@ -1,4 +1,5 @@
 {% extends 'boipoka_app/base.html' %}
+{% load book_filters %}
 {% block title %}Notifications{% endblock %}
 
 {% block content %}
@@ -6,14 +7,29 @@
         <div class="mt-20 flex flex-col gap-5">
             <ul class="flex flex-col gap-5 text-2xl px-12 py-9 mt-24  rounded " style="position:absolute; left:20%;right:20%;margin:auto;">
                 {% for rec in notifications %}
-                    <a href="{% url 'boipoka_app:makeunread' rec.pk %}" style="text-decoration: none;">
-                        <div class="px-12 py-10 flex gap-10 rounded" style="background-color:white !important;">
+                    {% if unclickable|get_item:rec.pk %}
+                        <a href="{% url 'boipoka_app:makeunread' rec.pk %}" style="text-decoration: none;">
+                            <div class="px-12 py-10 flex flex-col gap-10 rounded" style="background-color:white !important;">
+                                <li class="text-center">
+                                    {{ rec.message }}
+                                </li>
+                                <div  class=" px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
+                                    <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>
+                                </div>
+                                <sub>{{rec.timestamp}}</sub>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="px-12 py-10 flex flex-col gap-10 rounded" style="background-color:white !important;">
                             <li class="text-center">
                                 {{ rec.message }}
                             </li>
-                            <div class="px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">Delete</div>
+                            <div  class="mx-50 px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
+                                <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>
+                            </div>
+                            <sub>{{rec.timestamp}}</sub>
                         </div>
-                    </a>
+                    {% endif %}
                 {% endfor %}
             </ul>
         </div>

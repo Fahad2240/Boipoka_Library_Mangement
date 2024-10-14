@@ -8,9 +8,9 @@ def unread_notifications(request):
         if temp.exists():
             unread_count = temp.count()
         else:
-            unread_count = -1
+            unread_count = None
     else:
-        unread_count = -1
+        unread_count = None
 
     return {
         'unread_notifications_count': unread_count,
