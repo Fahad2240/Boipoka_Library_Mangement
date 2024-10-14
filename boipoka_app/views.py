@@ -276,7 +276,7 @@ def report_lost_or_damaged(request, pk):
             separate_thread.start()
             # messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
             # Send a notification email here if needed
-            return redirect('boipoka_app:login_view')
+            return redirect('boipoka_app:login')
 
     # Display a success message and redirect back to the book list
     messages.success(request, f"The book '{borrowing.book.title}' has been reported as lost/damaged. A fine of 500 BDT has been applied.")
