@@ -43,24 +43,33 @@
                         <!--Checking if book is available or user is Admin or not -->
                         {% if book.available_copies or request.user.is_superuser %}
                             <a href="{% url 'boipoka_app:book_details' book.id %}">
+                                <!-- If this book contains image    -->
                                 {% if book.image %}
+                                    <!-- If this book is borrowed and the user have only 1 day or left to return the book    -->
                                     {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <!-- If the due date is nearer an Altet will be marked  along with image -->
                                         <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
                                         </sup>
                                         <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    <!-- Otherwise only image   -->
                                     {% else %}
                                         <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
                                     {% endif %}
+                                <!-- If this book have not any image  -->
                                 {% else %}
+                                    <!-- If this book is borrowed and the user have only 1 day or left to return the book    -->
                                     {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <!-- If the due date is nearer an Altet will be marked  along with image -->
                                         <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
                                         </sup>
                                         <img src="" alt="{{ book.title }}" class="w-56 h-56">
+                                    <!-- Otherwise only image   -->
                                     {% else %}
                                         <img src="" alt="No image available" class="w-56 h-56">
                                     {% endif %}
                                 {% endif %}
                             </a>
+                        <!-- If the user is not Admin or  the available_copies is 0 then one can't click on the image to go to details -->
                         {% else %}
                             <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 opacity-50" disabled>
                         {% endif %}
