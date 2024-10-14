@@ -362,8 +362,8 @@ def login_view(request):
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
-        subscription=Subscription.objects.filter(user=user)
-        if subscription.exists() :
+        subscription=Subscription.objects.filter(user=user).first()
+        if subscription is not None:
             if subscription.is_active == False:
                 borrowing = Borrowing.objects.filter(user=user,is_damagedorlost=True).count()
                 if borrowing>=3:
