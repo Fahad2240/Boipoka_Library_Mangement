@@ -4,6 +4,7 @@
 {% block content %}
 <div class="mt-20">
     <h2 class="text-3xl text-white font-semibold text-center">Your Reading History</h2>
+    <!-- Search a book by its title or a Date boundary [StartDate,EndDate] to fetch the information of borrowed books irrespective returned or not by the particular user   -->
     <form class="mt-10 flex flex-col items-center" method="GET" action="{% url 'boipoka_app:reading_history' %}">
         <div>
             <label class="text-white">Search a Borrowed Book by Title</label>
@@ -19,25 +20,33 @@
         </div>
         <button type="submit" class="mt-10 text-white font-semibold px-3 py-2" style="background-color:#452c63 !important">Search</button>
     </form>
+    <!-- A ladder of all of borrowed books by the user irrespective of returned or not    -->
     <div class="mt-20">{% comment %}#4B0082{% endcomment %}
         <ul class="text-2xl px-10 py-9 z-20 mt-28 text-white  rounded " style="position:absolute; background-color:#452c63  !important;left:20%;right:20%;margin:auto;">
             {% for entry in history %}
                 <div class=" py-10">
                     <li>
                         {{ entry.book.title }} 
+                        <!-- Borrowed book's issued time -->
                         <div class="mt-2">
                             <p class="font-bold" style="color:black !important">Borrowed on: {{ entry.borrowed_on }}</p>
                         </div>
                         <div class="font-bold" >
+                            <!-- Checking if the book is returned or not    -->
                             {% if entry.returned_at %}
+                            <!-- Show return time if it is returned  -->
                             <p style="color:#17B169 !important">Returned on: {{ entry.returned_at }} </p>
+                            <!-- Otherwise display this message -->
                             {% else %}
                             <p style="color:#007791 !important">It is still not returned</p>
                             {% endif %}
                         </div>
+                        
                         <div class="mt-5">
+                            <!-- Checking if the reading of this borrowed book  is incomplete or not  -->
                             {% if incomplete|get_unread:entry.pk == 1  %}
                                 <p class="font-bold" style="color:#DADD98 !important">Incomplete</p>
+                            <!-- Otherwise user can make it incomplete by clicking mark as unread    -->
                             {% else %}
                                 <a class="px-4 py-2 text-white" href="{% url 'boipoka_app:mark_unread' entry.pk %}" style="background-color:#4B0082 !important">Mark as Unread</a>
                             {% endif %}
