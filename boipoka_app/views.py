@@ -310,8 +310,9 @@ def book_details(request, pk):
     # print(borrowed_books_count)
     check = Borrowing.objects.filter(user=request.user,book=book,reissue_state=True).exists()
     flag=0
-    if borrowed_books_count is not None and  borrowed_books_count >= subscription.max_books:
-        flag=1
+    if borrowed_books_count is not None and subscription is not None:
+        if borrowed_books_count >= subscription.max_books:
+            flag=1
     print(check)
     # Check if the user has borrowed this specific book
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
