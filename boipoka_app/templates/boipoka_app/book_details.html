@@ -84,22 +84,24 @@
                     </div>
                 {% endif %}
             {% endif %}
-            <div class="flex justify-center text-white font-semibold gap-5">
-                {% if is_borrowed  %}
-                    <p>Due Date: {{ book_due_info }}</p>
-                    {% if book_due_near %}
-                        <div class=" text-white font-bold text-2xl" style="color:#cc0000 !important"><p >Alert! You have only 1 day left to return this book.</p></div>
-                        {% if not check %}
-                            <form method="post" action="{% url 'boipoka_app:reissue_book' book.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class=" px-3 py-2 text-white font-semibold" style="background-color: #1B4D3E !important;margin-left:50% !important;">Reissue Book</button>
-                            </form>
-                        {% else %}
-                            <button  class=" px-3 py-2 text-white font-semibold" style="background-color: #1B4D3E !important;margin-left:50% !important;">Your request for reissuing this book has been sent</button>
+            {% if not request.user.is_superuser %}
+                <div class="flex justify-center text-white font-semibold gap-5">
+                        {% if is_borrowed  %}
+                            <p>Due Date: {{ book_due_info }}</p>
+                                {% if book_due_near %}
+                                    <div class=" text-white font-bold text-2xl" style="color:#cc0000 !important"><p >Alert! You have only 1 day left to return this book.</p></div>
+                                    {% if not check %}
+                                        <form method="post" action="{% url 'boipoka_app:reissue_book' book.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class=" px-3 py-2 text-white font-semibold" style="background-color: #1B4D3E !important;margin-left:50% !important;">Reissue Book</button>
+                                        </form>
+                                    {% else %}
+                                        <button  class=" px-3 py-2 text-white font-semibold" style="background-color: #1B4D3E !important;margin-left:50% !important;">Your request for reissuing this book has been sent</button>
+                                    {% endif %}
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                {% endif %}
-            </div>
+                </div>
+            {% endif %}
             <button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:book_list' %}">Back to Booklists</a></button>
         {% endif %}
     </div>
