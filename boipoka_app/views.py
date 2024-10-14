@@ -138,6 +138,8 @@ def book_list(request):
     borrow_info = {}
     isreported = {}
     paidlist={}
+    borrowedornot={}
+    book_due_near={}
     # Create or update books in the database from external source
     create_books_in_db(fetch_books_data(0, 10))
 
@@ -225,8 +227,13 @@ def book_list(request):
         is_borrowed = Borrowing.objects.filter(user=request.user,returned_at__isnull=True ,book=book).exists()
         if is_borrowed:
             borrowed = Borrowing.objects.filter(user=request.user, book=book).first()
+            temp = borrowed.due_date < (timezone.now() + timedelta(days=1))
+            borrowedornot[book.pk]=True
+            book_due_near[book.pk]=temp
             isreported[book.pk] = borrowed.is_damagedorlost
         else:
+            book_due_near[book.pk]=False
+            borrowedornot[book.pk]=False
             isreported[book.pk] = False  # Default value if the book is not borrowed
 
         # Determine if the book is available
@@ -250,6 +257,8 @@ def book_list(request):
         'isreported': isreported,
         'reactivation_flag': reactivation_flag,
         'paidlist': paidlist,
+        'borrowedornot': borrowedornot,
+        'book_due_near':book_due_near
     })
 
 

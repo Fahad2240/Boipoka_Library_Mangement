@@ -38,12 +38,24 @@
             {% for book in books %}
                 <div class="flex flex-col justify-around items-center border-solid border-indigo-500">
                     <div class="border-solid border-indigo-500">
-                        {% if book_availability|get_item:book.pk or request.user.is_superuser %}
+                        {% if book.available_copies or request.user.is_superuser %}
                             <a href="{% url 'boipoka_app:book_details' book.id %}">
                                 {% if book.image %}
-                                    <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
+                                        </sup>
+                                        <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    {% else %}
+                                        <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    {% endif %}
                                 {% else %}
-                                    <img src="" alt="No image available" class="w-56 h-56">
+                                    {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
+                                        </sup>
+                                        <img src="" alt="{{ book.title }}" class="w-56 h-56">
+                                    {% else %}
+                                        <img src="" alt="No image available" class="w-56 h-56">
+                                    {% endif %}
                                 {% endif %}
                             </a>
                         {% else %}
