@@ -400,18 +400,24 @@ def book_details(request, pk):
     }
     return render(request, 'boipoka_app/book_details.html', context)
 
+@login_required
 def new_subscription_creation(request):
     if request.method == "POST":
         form = SubscriptionForm(request.POST)
         if form.is_valid():
+            existing_subscription = Subscription.objects.filter(user=request.user).first()
+            if existing_subscription:
+                return redirect('boipoka_app:book_list')
             subscription = form.save(commit=False)
             subscription.user = request.user
             subscription.subscription_start = timezone.now()
             subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
             subscription.save()
             subtype=Subscription(user=request.user).subscription_type
-            end=Subscription(user=request.user).subscription_end
-            message=f'Your subscription of  {subtype} plan has been created susccessfully \n.It will end on {end}'
+            dhaka_timezone = pytz.timezone('Asia/Dhaka')
+            end_date=subscription.subscription_end.astimezone(dhaka_timezone)
+            end_date=end_date.strftime('%b. %d, %Y, %I:%M %p')  # Format the end date
+            message=f'Your subscription of  {subtype} plan has been created susccessfully \n.It will end on {end_date}.'
             Notifications.objects.create(
                 subscriber=request.user,
                 message=message,
@@ -681,9 +687,8 @@ def return_book(request, pk):
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
-        returntime = returntime.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
-        message=f'Your have successfully returned the book {book.title} at {returntime}'
+        message=f'Your have successfully returned the book {book.title} at {formatted_time}'
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
