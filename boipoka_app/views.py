@@ -422,7 +422,7 @@ def new_subscription_creation(request):
             subscription.subscription_start = timezone.now()
             subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
             subscription.save()
-            subtype=Subscription(user=request.user).subscription_type
+            subtype=subscription.subscription_type
             dhaka_timezone = pytz.timezone('Asia/Dhaka')
             end_date=subscription.subscription_end.astimezone(dhaka_timezone)
             end_date=end_date.strftime('%b. %d, %Y, %I:%M %p')  # Format the end date
