@@ -2,6 +2,7 @@
 
 {% block title %}Book Details{% endblock title %}
 {% block content %}
+<!--Pop up messages for Some event happend some specific views from where it redirects to this book_details view-->
 {% if messages %}
     <div id="popupModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white rounded-lg shadow-lg max-w-lg w-full">
@@ -27,8 +28,9 @@
         }
     </script>
 {% endif %}
-
+<!--Book Image and Description -->
 <div class="mt-16 pt-14 flex flex-row  gap-5" >
+    <!-- Book Image or Book title if the image is not loaded -->
     <div class="w-full h-full text-white" style="border: 1 px solid !important;">
         {% if book.image %}
             <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-full h-full"  >
@@ -36,6 +38,7 @@
             <img src="" alt="{{ book.title }}"  class="w-full h-full" >
         {% endif %}
     </div>
+    <!-- Book Title and Description  -->
     <div class="p-5 rounded-xl text-dark" style="background-color:#5072A7 !important;">
         <h1><strong class="font-semibold text-3xl">{{ book.title }}</strong></h1>
         {% if book.description %}
@@ -43,7 +46,7 @@
             <span>{{ book.description }}</span>
         </p>
         {% endif %}
-
+        <!-- User is logged in  -->
         {% if user.is_authenticated %}
             {% if subscription %}
                 <p class='font-bold'>You can borrow maximum  {{subscription.max_books}} books at once </p>

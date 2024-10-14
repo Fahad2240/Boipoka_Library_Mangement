@@ -16,7 +16,7 @@
 <body class=" bg-gray-900">
 {% block content %}
     <h2 class=" text-white text-center ">Subscription Creation</h2>
-    
+    <!--Showing Details about all of the subscription plans -->
     <div class="card-group flex gap-3 " style="margin-top:15% !important;">
         <div class="card bg-success px-4 py-3 " style="border:none !important;font-weight: bold !important;font-size: 25px">
             <div class="bg-success card-body text-white border-success">
@@ -37,7 +37,7 @@
             </div>
         </div>
     </div>
-
+    <!--Subscription creation fofm by choosing among these three types of subscription-->
     <div class="absolute  left-1/4 right-1/4 w-1/2 top-20  p-6  bg-gray-100 rounded-xl">
         <form method="post">
             {% csrf_token %}
