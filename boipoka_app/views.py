@@ -1560,46 +1560,63 @@ def delete_subscription(request, pk):
     return redirect('boipoka_app:user_details', pk=user.pk)
 
 @user_passes_test(is_admin)
-def manage_subscriptions_starting(request,pk):
-    subscription = get_object_or_404(Subscription, pk=pk)
-    user=subscription.user
+def manage_subscriptions_starting(request, pk):
+    """Manage the starting date of a subscription identified by its primary key (pk)."""
+    subscription = get_object_or_404(Subscription, pk=pk)  # Retrieve the subscription or return a 404 error
+    user = subscription.user  # Get the user associated with the subscription
+
     if request.method == 'POST':
+        # Retrieve the new starting date from the form
         new_subscription_startdate_str = request.POST.get('start-date')
-        new_subscription_startdate = datetime.strptime(new_subscription_startdate_str, '%Y-%m-%dT%H:%M')  # Adjust the format to match your input format
-        # If the due_date is naive (without timezone info), mak it timezone-aware
+        new_subscription_startdate = datetime.strptime(new_subscription_startdate_str, '%Y-%m-%dT%H:%M')  # Parse the input date string
+        
+        # If the new start date is naive (without timezone info), make it timezone-aware
         if timezone.is_naive(new_subscription_startdate):
             new_subscription_startdate = timezone.make_aware(new_subscription_startdate, timezone.get_current_timezone())
-        subscription.subscription_start = new_subscription_startdate
-        subscription.save()
-    return redirect('boipoka_app:user_details', pk=user.pk)
-@user_passes_test(is_admin)
-def manage_subscriptions_ending(request,pk):
-    subscription = get_object_or_404(Subscription, pk=pk)
-    user=subscription.user
-    if request.method == 'POST':
-        new_subscription_enddate_str = request.POST.get('expire-date')
-        new_subscription_enddate = datetime.strptime(new_subscription_enddate_str, '%Y-%m-%dT%H:%M')  # Adjust the format to match your input format
-        # If the due_date is naive (without timezone info), mak it timezone-aware
-        if timezone.is_naive( new_subscription_enddate):
-            new_subscription_enddate = timezone.make_aware(new_subscription_enddate, timezone.get_current_timezone())
-        subscription.subscription_end =  new_subscription_enddate
-        subscription.save()
+        
+        subscription.subscription_start = new_subscription_startdate  # Update the subscription start date
+        subscription.save()  # Save the updated subscription
 
-    return redirect('boipoka_app:user_details', pk=user.pk)
+    return redirect('boipoka_app:user_details', pk=user.pk)  # Redirect to the user details page
+
+
+@user_passes_test(is_admin)
+def manage_subscriptions_ending(request, pk):
+    """Manage the ending date of a subscription identified by its primary key (pk)."""
+    subscription = get_object_or_404(Subscription, pk=pk)  # Retrieve the subscription or return a 404 error
+    user = subscription.user  # Get the user associated with the subscription
+
+    if request.method == 'POST':
+        # Retrieve the new ending date from the form
+        new_subscription_enddate_str = request.POST.get('expire-date')
+        new_subscription_enddate = datetime.strptime(new_subscription_enddate_str, '%Y-%m-%dT%H:%M')  # Parse the input date string
+        
+        # If the new end date is naive (without timezone info), make it timezone-aware
+        if timezone.is_naive(new_subscription_enddate):
+            new_subscription_enddate = timezone.make_aware(new_subscription_enddate, timezone.get_current_timezone())
+        
+        subscription.subscription_end = new_subscription_enddate  # Update the subscription end date
+        subscription.save()  # Save the updated subscription
+
+    return redirect('boipoka_app:user_details', pk=user.pk)  # Redirect to the user details page
+
 
 @login_required
 def renew_subscription(request):
-    subscription = get_object_or_404(Subscription, user=request.user)
+    """Renew the subscription of the logged-in user by extending the end date by 30 days."""
+    subscription = get_object_or_404(Subscription, user=request.user)  # Retrieve the user's subscription or return a 404 error
 
     if request.method == 'POST':
         # Extend the subscription period by 30 days
-        subscription.subscription_end += timedelta(days=30)
-        subscription.save()
-        request.user = get_user_model().objects.get(pk=request.user.pk)
-        # print(subscription.subscription_end)
+        subscription.subscription_end += timedelta(days=30)  # Increase the end date
+        subscription.save()  # Save the updated subscription
+        request.user = get_user_model().objects.get(pk=request.user.pk)  # Refresh the user instance
         
+        # Optionally, add a success message (commented out)
         # messages.success(request, "Your subscription has been renewed successfully.")
-        return redirect('boipoka_app:book_list')
+        return redirect('boipoka_app:book_list')  # Redirect to the book list page
 
+    # Render the renewal form with the current subscription details
     return render(request, 'boipoka_app/renew_subscription.html', {'subscription': subscription})
+
 
