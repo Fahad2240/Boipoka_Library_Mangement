@@ -1120,59 +1120,77 @@ def reissue_book(request, pk):
 # Admin: Add a new book
 @user_passes_test(is_admin)
 def add_book(request):
-    if request.method == 'POST':
-        form = BookForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            # messages.success(request, 'Book added successfully.')
-            return redirect('boipoka_app:book_list')  # Redirect to book list after successful upload
+    """
+    View function for adding a new book. Restricted to admin users only.
+    """
+    if request.method == 'POST':  # Check if the request method is POST (form submission)
+        form = BookForm(request.POST, request.FILES)  # Create a form instance with the submitted data and files
+        if form.is_valid():  # Validate the form data
+            form.save()  # Save the new book to the database
+            # messages.success(request, 'Book added successfully.')  # Optionally, display a success message
+            return redirect('boipoka_app:book_list')  # Redirect to the book list page after successful addition
     else:
-        form = BookForm()
-    return render(request, 'boipoka_app/add_book.html', {'form': form})
-
+        form = BookForm()  # If GET request, create an empty form instance
+    return render(request, 'boipoka_app/add_book.html', {'form': form})  # Render the add_book template with the form
 
 # Admin: Edit an existing book
 @user_passes_test(is_admin)
 def edit_book(request, pk):
-    book = get_object_or_404(Book, pk=pk)
-    if request.method == 'POST':
-        form = BookForm(request.POST, request.FILES, instance=book)
-        if form.is_valid():
-            form.save()
-            # messages.success(request, 'Book updated successfully.')
-            return redirect('boipoka_app:book_list')  # Redirect to book list after successful edit
+    """
+    View function for editing an existing book. Restricted to admin users only.
+    """
+    book = get_object_or_404(Book, pk=pk)  # Retrieve the book based on the primary key (pk), or return a 404 if not found
+    if request.method == 'POST':  # Check if the request method is POST (form submission)
+        form = BookForm(request.POST, request.FILES, instance=book)  # Create a form instance with the submitted data and files for the specific book instance
+        if form.is_valid():  # Validate the form data
+            form.save()  # Save the updates to the book in the database
+            # messages.success(request, 'Book updated successfully.')  # Optionally, display a success message
+            return redirect('boipoka_app:book_list')  # Redirect to the book list page after successful update
     else:
-        form = BookForm(instance=book)
-    return render(request, 'boipoka_app/edit_book.html', {'form': form, 'book': book})
+        form = BookForm(instance=book)  # If GET request, create a form instance pre-filled with the book's current data
+    return render(request, 'boipoka_app/edit_book.html', {'form': form, 'book': book})  # Render the edit_book template with the form and book information
 
 # Admin: Delete a book
 @user_passes_test(is_admin)
 def delete_book(request, pk):
-    book = get_object_or_404(Book, pk=pk)
-    if request.method == 'POST':
-        book.delete()
-        # messages.success(request, 'Book deleted successfully.')
-        return redirect('boipoka_app:book_list')  # Redirect to book list after successful deletion
-    return render(request, 'boipoka_app/delete_book.html', {'book': book})
+    """
+    View function for deleting a book. Restricted to admin users only.
+    """
+    book = get_object_or_404(Book, pk=pk)  # Retrieve the book based on the primary key (pk), or return a 404 if not found
+    if request.method == 'POST':  # Check if the request method is POST (confirmation submission)
+        book.delete()  # Delete the book from the database
+        # messages.success(request, 'Book deleted successfully.')  # Optionally, display a success message
+        return redirect('boipoka_app:book_list')  # Redirect to the book list page after successful deletion
+    return render(request, 'boipoka_app/delete_book.html', {'book': book})  # Render the delete_book template with the book information
+
 
 
 @user_passes_test(is_admin)
 def users(request):
-    users = User.objects.filter(is_superuser=False)
-    return render(request, 'boipoka_app/users.html', {'users': users})
+    """
+    View function to list all users who are not superusers. 
+    Restricted to admin users only.
+    """
+    users = User.objects.filter(is_superuser=False)  # Query to get all users excluding superusers
+    return render(request, 'boipoka_app/users.html', {'users': users})  # Render the users template with the list of users
 
 @user_passes_test(is_admin)
 def user_details(request, pk):
-    user = get_object_or_404(User, pk=pk)
-    borrowings = Borrowing.objects.filter(user=user)
-    notreturnedbooks = borrowings.filter(returned_at__isnull=True)
-    returned_books = borrowings.filter(returned_at__isnull=False)
-    subscription = Subscription.objects.filter(user=user).first()
-    overdue_books = borrowings.filter(due_date__lt=timezone.now(), returned_at__isnull=True)
-    damaged_books = Borrowing.objects.filter(user=user, is_damagedorlost=True)
-    damaged_history = DamagedorLostHistory.objects.filter(user=user,isdeleted=True)
-    reissue_requests = Borrowing.objects.filter(reissue_state=True, user=user)
+    """
+    View function to display details of a specific user. 
+    Restricted to admin users only.
+    """
+    user = get_object_or_404(User, pk=pk)  # Retrieve the user based on the primary key (pk), or return a 404 if not found
+    borrowings = Borrowing.objects.filter(user=user)  # Retrieve all borrowing records associated with the user
+    notreturnedbooks = borrowings.filter(returned_at__isnull=True)  # Filter borrowings for books not yet returned
+    returned_books = borrowings.filter(returned_at__isnull=False)  # Filter borrowings for books that have been returned
+    subscription = Subscription.objects.filter(user=user).first()  # Get the user's subscription details, if any
+    overdue_books = borrowings.filter(due_date__lt=timezone.now(), returned_at__isnull=True)  # Find overdue books
+    damaged_books = Borrowing.objects.filter(user=user, is_damagedorlost=True)  # Find borrowings marked as damaged or lost
+    damaged_history = DamagedorLostHistory.objects.filter(user=user, isdeleted=True)  # Retrieve history of damaged or lost items
+    reissue_requests = Borrowing.objects.filter(reissue_state=True, user=user)  # Retrieve reissue requests made by the user
 
+    # Prepare the context dictionary to pass to the template
     context = {
         'user': user,
         'subscription': subscription,
@@ -1185,262 +1203,307 @@ def user_details(request, pk):
         'reissue_requests': reissue_requests
     }
 
-    return render(request, 'boipoka_app/user_details.html', {'context': context})
+    return render(request, 'boipoka_app/user_details.html', {'context': context})  # Render the user_details template with the context
 
 @user_passes_test(is_admin)
-def reactivesubscription(request,pk):
-    subscription = get_object_or_404(Subscription, pk=pk)
-    if request.method == 'POST':
-        subscription.is_active=True
-        subscription.save()
+def reactivesubscription(request, pk):
+    """
+    View function to reactivate a user's subscription. 
+    Restricted to admin users only.
+    """
+    subscription = get_object_or_404(Subscription, pk=pk)  # Retrieve the subscription based on the primary key (pk), or return a 404 if not found
+    if request.method == 'POST':  # Check if the request method is POST (form submission)
+        subscription.is_active = True  # Reactivate the subscription
+        subscription.save()  # Save the updated subscription status
         
-        subject = f'Subscritpion Reactivation : {subscription.user.username} s Subscription Has been Activated'
+        # Prepare the email subject and message
+        subject = f'Subscritpion Reactivation : {subscription.user.username}\'s Subscription Has been Activated'
         message = (
             f'Dear {subscription.user.username},\n\n'
             f'We have reactivated your subscription plan {subscription.subscription_type} successfully.\n'
-            f'From now, you can have full access of the "Boipoka Book Borrowing System".\n\n'
-            f'Thank you very much .\n\n'
+            f'From now, you can have full access to the "Boipoka Book Borrowing System".\n\n'
+            f'Thank you very much.\n\n'
             f'\n\n Best regards, \n\n Boipoka Admin\n\n'
         )
-        recipient_list = [subscription.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
+        recipient_list = [subscription.user.email]  # Set the recipient's email address
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Set the reply-to address
         
-        
+        # Create a separate thread to send the email
         separate_thread = threading.Thread(
-            target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            target=send_email_threaded,  # Function to send email
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)  # Arguments for the email function
         )
-        separate_thread.start()
-        message=f'Your subscription of  {subscription} plan has been susccessfully reactivated by Admin \n.'
-        
-        Notifications.objects.create(
-            subscriber=subscription.user,
-            message=message,
-            timestamp=timezone.now(),
+        separate_thread.start()  # Start the email sending thread
+
+        # Create a notification for the user about the reactivation
+        message = f'Your subscription of {subscription} plan has been successfully reactivated by Admin.\n.'
+        Notifications.objects.create(  # Create a new notification entry
+            subscriber=subscription.user,  # Set the user as the subscriber
+            message=message,  # Set the notification message
+            timestamp=timezone.now(),  # Set the current timestamp
         )
-        # logger.info(f'Activated the subscription for user {subscription.user.username}')
-    return redirect('boipoka_app:user_details', pk=subscription.user.pk)
+        # logger.info(f'Activated the subscription for user {subscription.user.username}')  # Log the activation (commented out)
+    
+    return redirect('boipoka_app:user_details', pk=subscription.user.pk)  # Redirect to the user details page after reactivation
+
 
 
 
 @user_passes_test(is_admin)
 def update_due_date(request, pk):
     """Update the due date of a specific borrowing."""
-    borrowing = get_object_or_404(Borrowing, pk=pk)
-    user = borrowing.user
+    borrowing = get_object_or_404(Borrowing, pk=pk)  # Retrieve the borrowing record based on the primary key (pk) or return a 404 if not found
+    user = borrowing.user  # Get the user associated with this borrowing record
     
-    if request.method == 'POST':
-        new_due_date_str = request.POST.get('due_date')
-        # print(new_due_date_str)  # Debug: print the due date string received
+    if request.method == 'POST':  # Check if the request method is POST (indicating form submission)
+        new_due_date_str = request.POST.get('due_date')  # Retrieve the new due date from the submitted form data
+        # print(new_due_date_str)  # Debug: print the due date string received for verification
 
-        # Parse the incoming date string in the format "2024-09-02T20:27"
+        # Parse the incoming date string in the format "2024-09-02T20:27" into a datetime object
         new_due_date = datetime.strptime(new_due_date_str, '%Y-%m-%dT%H:%M')
         
-        # If the new due date is naive (without timezone info), make it timezone-aware
+        # If the new due date is naive (i.e., it does not contain timezone information), make it timezone-aware
         if timezone.is_naive(new_due_date):
-            new_due_date = timezone.make_aware(new_due_date, timezone.get_current_timezone())
+            new_due_date = timezone.make_aware(new_due_date, timezone.get_current_timezone())  # Attach current timezone to the naive datetime
         
-        # Update the borrowing due date and save
-        borrowing.due_date = new_due_date
-        borrowing.save()
+        # Update the borrowing's due date with the new value and save the changes to the database
+        borrowing.due_date = new_due_date  # Set the new due date
+        borrowing.save()  # Save the updated borrowing record
         
+        # Display a success message indicating the due date has been updated
         messages.success(request, f'Due date for "{borrowing.book.title}" updated successfully.')
     
+    # Redirect the user back to the details page of the associated user after updating the due date
     return redirect('boipoka_app:user_details', pk=user.pk)
-        # return redirect('boipoka_app:user_details', pk=borrowing.user.pk)
 
+# Initialize a logger for the current module to log events
 logger = logging.getLogger(__name__)
 
 def send_email_threaded(subject: str, message: str, sender_email: str, toaddr: list, reply_to: list = None):
     """Send emails asynchronously in a separate thread with a reply-to address."""
     try:
-        # Create an EmailMessage instance
+        # Create an EmailMessage instance with the provided parameters
         email = EmailMessage(
-            subject=subject,
-            body=message,
-            from_email=sender_email,
-            to=toaddr,
-            reply_to=reply_to  # Adding reply_to field here
+            subject=subject,  # Set the email subject
+            body=message,  # Set the email body/message
+            from_email=sender_email,  # Set the sender's email address
+            to=toaddr,  # Set the list of recipient email addresses
+            reply_to=reply_to  # Include a reply-to address if provided
         )
-        email.send(fail_silently=False)  # Send the email
-        logger.info(f"Email sent to {toaddr} with subject: '{subject}'")
+        email.send(fail_silently=False)  # Send the email and raise an error if it fails
+        logger.info(f"Email sent to {toaddr} with subject: '{subject}'")  # Log that the email was sent successfully
     except SMTPException as e:
-        logger.error(f"Failed to send email: {str(e)}")
+        logger.error(f"Failed to send email: {str(e)}")  # Log an error if sending the email fails
     except Exception as e:
-        logger.error(f"An error occurred while sending email: {str(e)}")
-        raise Exception("Something went wrong with sending email.")
+        logger.error(f"An error occurred while sending email: {str(e)}")  # Log any other exceptions that occur
+        raise Exception("Something went wrong with sending email.")  # Raise a generic error for further handling
     
 def send_email_threaded_single(subject: str, message: str, sender_email: str, toaddr, reply_to: list = None):
-    """Send emails asynchronously in a separate thread with a reply-to address."""
+    """Send emails asynchronously in a separate thread with a reply-to address for a single recipient."""
     try:
-        # Create an EmailMessage instance
+        # Create an EmailMessage instance for a single recipient
         email = EmailMessage(
-            subject=subject,
-            body=message,
-            from_email=sender_email,
-            to=[toaddr] if isinstance(toaddr, str) else toaddr,
-            reply_to=reply_to  # Adding reply_to field here
+            subject=subject,  # Set the email subject
+            body=message,  # Set the email body/message
+            from_email=sender_email,  # Set the sender's email address
+            to=[toaddr] if isinstance(toaddr, str) else toaddr,  # Convert toaddr to a list if it's a single string
+            reply_to=reply_to  # Include a reply-to address if provided
         )
-        email.send(fail_silently=False)  # Send the email
-        logger.info(f"Email sent to {toaddr} with subject: '{subject}'")
+        email.send(fail_silently=False)  # Send the email and raise an error if it fails
+        logger.info(f"Email sent to {toaddr} with subject: '{subject}'")  # Log that the email was sent successfully
     except SMTPException as e:
-        logger.error(f"Failed to send email: {str(e)}")
+        logger.error(f"Failed to send email: {str(e)}")  # Log an error if sending the email fails
     except Exception as e:
-        logger.error(f"An error occurred while sending email: {str(e)}")
-        raise Exception("Something went wrong with sending email.")
+        logger.error(f"An error occurred while sending email: {str(e)}")  # Log any other exceptions that occur
+        raise Exception("Something went wrong with sending email.")  # Raise a generic error for further handling
+
 
 @user_passes_test(is_admin)
 def send_reminder(request, pk):
     """Send a reminder to a specific user about their overdue book asynchronously."""
+    # Retrieve the user based on the primary key (pk) or return a 404 if not found
     user = get_object_or_404(User, pk=pk)
+    
+    # Get all borrowings for the user that are not returned and are overdue
     borrowings = Borrowing.objects.filter(user=user, returned_at__isnull=True, due_date__lt=timezone.now())
+    
+    # Retrieve the user's subscription details, or return a 404 if not found
     subscription = get_object_or_404(Subscription, user=user)
             
+    # If there are no overdue borrowings, redirect to the user's details page
     if not borrowings.exists():
         # messages.warning(request, f'No overdue books found for user ID {pk}.')
-        return redirect('boipoka_app:user_details',pk=user.pk)
+        return redirect('boipoka_app:user_details', pk=user.pk)
     
+    # Determine the penalty rate based on the user's subscription type
     penalty_rate = 0
     if subscription:
         if subscription.subscription_type == 'Basic':
-            penalty_rate = 2
+            penalty_rate = 2  # Basic subscription penalty rate
         elif subscription.subscription_type == 'Premium':
-            penalty_rate = 5
+            penalty_rate = 5  # Premium subscription penalty rate
         elif subscription.subscription_type == 'VIP':
-            penalty_rate = 10
+            penalty_rate = 10  # VIP subscription penalty rate
+    
+    # Iterate through each overdue borrowing to prepare and send reminders
     for borrowing in borrowings:
-        # Prepare the email
-        due_date = borrowing.due_date
-        time_now = timezone.now()
-        difference = (time_now - due_date).days+10  # Calculate the difference in days
-        penalty = penalty_rate * difference if difference > 0 else 0  # Apply penalty only if overdue
+        due_date = borrowing.due_date  # Get the due date of the borrowing
+        time_now = timezone.now()  # Get the current time
+        difference = (time_now - due_date).days + 10  # Calculate the difference in days (adding grace period of 10 days)
+        penalty = penalty_rate * difference if difference > 0 else 0  # Calculate penalty only if the book is overdue
         
+        # Prepare the email subject and message for the reminder
         subject = f'Reminder: Overdue Book - {borrowing.book.title}'
         message = (
             f'Dear {borrowing.user.username},\n\n'
-            f'This is a reminder that the book "{borrowing.book.title}" is overdued. '
+            f'This is a reminder that the book "{borrowing.book.title}" is overdue. '
             f'Please return it as soon as possible.\n\n'
             f'Penalty for overdue: {penalty} tk (based on your {subscription.subscription_type} subscription).\n\n'
         )
-        recipient_list = [borrowing.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
-        # Create a separate thread to send the email
+        
+        recipient_list = [borrowing.user.email]  # List of recipient email addresses
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Reply-to email address
+        
+        # Create a separate thread to send the email asynchronously
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)
         )
-        separate_thread.start()
+        separate_thread.start()  # Start the thread to send the email asynchronously
 
     # messages.success(request, f'Reminder(s) sent to {", ".join([b.user.username for b in borrowings])} for their overdue books.')
+    # Redirect to the user's details page after sending reminders
     return redirect('boipoka_app:user_details', pk=pk)
 
 
 @user_passes_test(is_admin)
-def send_returned_notifications(request,pk):
-    user=get_object_or_404(User,pk=pk)
-    returnedbooks = Borrowing.objects.filter(user=user, returned_at__isnull=False)
-    if not returnedbooks.exists():
-        return redirect('boipoka_app:user_details',pk=user.pk)
+def send_returned_notifications(request, pk):
+    """Send notifications to a specific user about successfully returned books."""
+    user = get_object_or_404(User, pk=pk)  # Retrieve the user based on the primary key (pk)
     
+    # Get all borrowings for the user that have been returned
+    returnedbooks = Borrowing.objects.filter(user=user, returned_at__isnull=False)
+    
+    # If there are no returned books, redirect to the user's details page
+    if not returnedbooks.exists():
+        return redirect('boipoka_app:user_details', pk=user.pk)
+    
+    # Iterate through each returned book to prepare and send notifications
     for item in returnedbooks:
+        due_date = item.due_date  # Get the due date of the borrowing
+        returntime = item.returned_at  # Get the time the book was returned
         
-        due_date = item.due_date
-        returntime=item.returned_at
-        subject = f'Returned Successfull: {item.book.title}'
+        # Prepare the email subject and message for the returned book notification
+        subject = f'Returned Successfully: {item.book.title}'
         message = (
             f'Dear {item.user.username},\n\n'
-            f'You have successfully returned the book "{item.book.title}"  at {returntime} which is within your due date {due_date}. '
-            f'Thank you very much .\n\n'
-            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            f'You have successfully returned the book "{item.book.title}" at {returntime} which is within your due date {due_date}. '
+            f'Thank you very much.\n\n'
+            f'Best regards,\n\nBoipoka Admin\n\n'
         )
-        recipient_list = [item.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
         
+        recipient_list = [item.user.email]  # List of recipient email addresses
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Reply-to email address
         
+        # Create a separate thread to send the email asynchronously
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)
         )
-        separate_thread.start()
+        separate_thread.start()  # Start the thread to send the email asynchronously
         
-    return redirect('boipoka_app:user_details', pk=user.pk)    
-    
-    
+    # Redirect to the user's details page after sending notifications
+    return redirect('boipoka_app:user_details', pk=user.pk)  
+
+
 @user_passes_test(is_admin)
-def send_borrowed_notifications(request,pk):
-    user=get_object_or_404(User,pk=pk)
+def send_borrowed_notifications(request, pk):
+    """Send notifications to a specific user about successfully borrowed books."""
+    user = get_object_or_404(User, pk=pk)  # Retrieve the user based on the primary key (pk)
+    
+    # Get all borrowings for the user that have not been returned
     borrowings = Borrowing.objects.filter(user=user, returned_at__isnull=True)
 
+    # If there are no borrowed books, redirect to the user's details page
     if not borrowings.exists():
-        return redirect('boipoka_app:user_details',pk=user.pk)
+        return redirect('boipoka_app:user_details', pk=user.pk)
     
+    # Iterate through each borrowed book to prepare and send notifications
     for item in borrowings:
+        due_date = item.due_date  # Get the due date of the borrowing
         
-        due_date = item.due_date
+        # Prepare the email subject and message for the borrowed book notification
         subject = f'Borrowed Book Info Registered: {item.book.title}'
         message = (
             f'Dear {item.user.username},\n\n'
-            f'You have successfully borrowed the book "{item.book.title}" on having {item.subscription} plan at {item.borrowed_on}. Your due date is {due_date}. '
-            f'Please try to return the book as early as possible within you due time .\n\n'
-            f'Thank you very much .\n\n'
-            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            f'You have successfully borrowed the book "{item.book.title}" on your {item.subscription} plan at {item.borrowed_on}. Your due date is {due_date}. '
+            f'Please try to return the book as early as possible within your due time.\n\n'
+            f'Thank you very much.\n\n'
+            f'Best regards,\n\nBoipoka Admin\n\n'
         )
-        recipient_list = [item.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
         
+        recipient_list = [item.user.email]  # List of recipient email addresses
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Reply-to email address
         
+        # Create a separate thread to send the email asynchronously
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)
         )
-        separate_thread.start()
+        separate_thread.start()  # Start the thread to send the email asynchronously
         
-    return redirect('boipoka_app:user_details', pk=user.pk)    
+    # Redirect to the user's details page after sending notifications
+    return redirect('boipoka_app:user_details', pk=user.pk)  
+
 
     
 
 
 @user_passes_test(is_admin)
 def edit_user(request, pk):
+    """Edit the details of a specific user identified by their primary key (pk)."""
     user = get_object_or_404(User, pk=pk)
 
     if request.method == 'POST':
+        # Update username and email from the form data
         user.username = request.POST.get('username', user.username)
         user.email = request.POST.get('email', user.email)
-        user.save()
+        user.save()  # Save the updated user information
+        # Optionally, add a success message (commented out)
         # messages.success(request, f'User {user.username} updated successfully.')
-        return redirect('boipoka_app:user_details',pk=pk)
+        return redirect('boipoka_app:user_details', pk=pk)
 
+    # Render the edit user form with the current user details
     return render(request, 'boipoka_app/edit_user.html', {'user': user})
 
 @user_passes_test(is_admin)
 def send_payment_needed(request, pk):
-    user=get_object_or_404(User,pk=pk)
-    reported = Borrowing.objects.filter(user=user,is_damagedorlost=True,fine_paid=False)
+    """Send notification to a user about payment required for damaged/lost books."""
+    user = get_object_or_404(User, pk=pk)
+    reported = Borrowing.objects.filter(user=user, is_damagedorlost=True, fine_paid=False)  # Get reported borrowings
     dhaka_timezone = pytz.timezone('Asia/Dhaka')
+
     if not reported.exists():
-        return redirect('boipoka_app:user_details',pk=user.pk)
-    
+        return redirect('boipoka_app:user_details', pk=user.pk)  # No reported items, redirect
+
     for item in reported:
-        
-        reporttime=item.damagedlostat
-        reporttime = reporttime.astimezone(dhaka_timezone)
-        reporttime= reporttime.strftime("%b. %d, %Y, %I:%M %p")
-        subject = f'Reminder - Payment Needed for Prohibiting the Subscription Being Suspended for Damaged/Lost Event of the Book : {item.book.title}'
+        # Format the report time in the desired timezone
+        reporttime = item.damagedlostat.astimezone(dhaka_timezone).strftime("%b. %d, %Y, %I:%M %p")
+        subject = f'Reminder - Payment Needed for Prohibiting the Subscription Being Suspended for Damaged/Lost Event of the Book: {item.book.title}'
         message = (
             f'Dear {item.user.username},\n\n'
-            f'Attention! It is mandatory to pay  500 TK within 1 day from the reported time {reporttime} for being damaged or lost of the book "{item.book.title}" .'
-            f'Otherwise, we will be very strict to make your subscription suspended until you pay for it .\n\n'
-            f'Thank you very much .\n\n'
-            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            f'Attention! It is mandatory to pay 500 TK within 1 day from the reported time {reporttime} for being damaged or lost of the book "{item.book.title}".'
+            f'Otherwise, we will be very strict to make your subscription suspended until you pay for it.\n\n'
+            f'Thank you very much.\n\n'
+            f'Best regards,\n\nBoipoka Admin\n\n'
         )
-        recipient_list = [item.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
+        recipient_list = [item.user.email]  # List of recipients
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Reply-to address
         
-        
+        # Send email asynchronously using a separate thread
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)
         )
         separate_thread.start()
         
@@ -1448,46 +1511,53 @@ def send_payment_needed(request, pk):
 
 @user_passes_test(is_admin)
 def send_payment_approval(request, pk):
-    user=get_object_or_404(User,pk=pk)
-    approved = Borrowing.objects.filter(user=user,is_damagedorlost=True,fine_paid_approved=True)
+    """Send notification to a user confirming payment approval for damaged/lost books."""
+    user = get_object_or_404(User, pk=pk)
+    approved = Borrowing.objects.filter(user=user, is_damagedorlost=True, fine_paid_approved=True)  # Get approved borrowings
 
     if not approved.exists():
-        return redirect('boipoka_app:user_details',pk=user.pk)
-    
+        return redirect('boipoka_app:user_details', pk=user.pk)  # No approved items, redirect
+
     for item in approved:
-        
-        subject = f'Payment Successfully Approved - Payment Approved for the Damaged/Lost Event of the Book : {item.book.title}'
+        subject = f'Payment Successfully Approved - Payment Approved for the Damaged/Lost Event of the Book: {item.book.title}'
         message = (
             f'Dear {item.user.username},\n\n'
-            f'We have recieved 500 TK as your payment for the damaged/lost event of the book "{item.book.title}" on {item.fine_paid_at} and approved it.'
-            f'If you are suspended we will reactivate your subscription very soon .\n\n'
-            f'Thank you very much .\n\n'
-            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            f'We have received 500 TK as your payment for the damaged/lost event of the book "{item.book.title}" on {item.fine_paid_at} and approved it.'
+            f'If you are suspended, we will reactivate your subscription very soon.\n\n'
+            f'Thank you very much.\n\n'
+            f'Best regards,\n\nBoipoka Admin\n\n'
         )
-        recipient_list = [item.user.email]
-        reply_to_address = ['boipoka_admin@boipoka.com']
+        recipient_list = [item.user.email]  # List of recipients
+        reply_to_address = ['boipoka_admin@boipoka.com']  # Reply-to address
         
-        
+        # Send email asynchronously using a separate thread
         separate_thread = threading.Thread(
             target=send_email_threaded,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list, reply_to_address)
         )
         separate_thread.start()
         
     return redirect('boipoka_app:user_details', pk=user.pk)    
+
 @user_passes_test(is_admin)
 def delete_user(request, pk):
+    """Delete a specific user identified by their primary key (pk)."""
     user = get_object_or_404(User, pk=pk)
-    user.delete()
+    user.delete()  # Delete the user record
+    # Optionally, add a success message (commented out)
     # messages.success(request, f'User {user.username} deleted successfully.')
     return redirect('boipoka_app:users')
+
 @user_passes_test(is_admin)
 def delete_subscription(request, pk):
+    """Delete a user's subscription if it exists."""
     user = get_object_or_404(User, pk=pk)
-    subscription = Subscription.objects.filter(user=user).first()
-    subscription.delete()
+    subscription = Subscription.objects.filter(user=user).first()  # Get the user's subscription
+
+    if subscription:
+        subscription.delete()  # Delete the subscription if it exists
     
-    return redirect('boipoka_app:user_details',pk=user.pk)
+    return redirect('boipoka_app:user_details', pk=user.pk)
 
 @user_passes_test(is_admin)
 def manage_subscriptions_starting(request,pk):
