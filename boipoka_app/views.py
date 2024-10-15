@@ -618,60 +618,120 @@ def new_subscription_creation(request):
     return render(request, 'boipoka_app/new_subscription_creation.html', {'form': form})
 @login_required
 def subscription(request):
-    return render(request,'boipoka_app/subscription.html')
+    """
+    This view renders the subscription page for the user.
+    - The @login_required decorator ensures that only authenticated users can access this page.
+    - It returns the rendered subscription template.
+    """
+    return render(request, 'boipoka_app/subscription.html')
+
+
 def login_view(request):
+    """
+    This view handles user login.
+    - If the request is POST, it processes login credentials (username and password) and authenticates the user.
+    - If authentication is successful, it checks for subscription status and redirects appropriately.
+    - If the login is invalid, it renders the login page with an error message.
+    """
+
     if request.method == 'POST':
+        # Fetch username and password from the POST request.
         username = request.POST['username']
         password = request.POST['password']
+        # Attempt to authenticate the user.
         user = authenticate(request, username=username, password=password)
-        subscription=Subscription.objects.filter(user=user).first()
+        subscription = Subscription.objects.filter(user=user).first()
+
+        """
+        If the user has a subscription:
+        - Check if the subscription is inactive. If it is, verify if the user has 3 or more damaged/lost incidents.
+        - If true, display a warning message and redirect back to the login page to prevent access.
+        """
         if subscription is not None:
             if subscription.is_active == False:
-                borrowing = Borrowing.objects.filter(user=user,is_damagedorlost=True).count()
-                if borrowing>=3:
-                    messages.warning(request, "You account has been suspeneded.Please contact with Admin")
+                borrowing = Borrowing.objects.filter(user=user, is_damagedorlost=True).count()
+                if borrowing >= 3:
+                    messages.warning(request, "Your account has been suspended. Please contact the Admin.")
                     return redirect('boipoka_app:login')
         
+        """
+        If the user is successfully authenticated:
+        - Log the user in and check if they have a subscription or are an admin.
+        - Redirect to the book list if they do, otherwise redirect them to the subscription page.
+        """
         if user is not None:
             login(request, user)
             print(is_admin(user))
             if subscription or is_admin(user):
-                return redirect('boipoka_app:book_list')  # Redirect to book_list
+                return redirect('boipoka_app:book_list')  # Redirect to the book list
             else:
                 return redirect('boipoka_app:subscription')
         else:
-            # Handle invalid login and pass 'error' to the template
+            # Render the login page with an error if credentials are invalid.
             return render(request, 'boipoka_app/login.html', {'error': 'Invalid credentials'})
     
+    # If the request method is GET, render the login page.
     return render(request, 'boipoka_app/login.html')
 
+
 def logout_view(request):
+    """
+    This view handles user logout.
+    - Logs out the user and redirects them to the index page.
+    - No login is required to access this view.
+    """
     logout(request)
-    return redirect('boipoka_app:index') 
+    return redirect('boipoka_app:index')
+
 
 @login_required
-def create_subscription(request,pk):
+def create_subscription(request, pk):
+    """
+    This view allows a user to create a subscription for a specific book.
+    - It checks if the user already has an existing subscription before proceeding.
+    - If a POST request is made with valid form data, it saves the new subscription and redirects to the book details page.
+    - If a GET request is made, it renders the subscription creation form.
+    """
+
+    # Fetch the book associated with the given primary key (pk).
     book = get_object_or_404(Book, pk=pk)
     existing_subscription = Subscription.objects.filter(user=request.user)
-    
+
+    """
+    If the user already has a subscription:
+    - Redirect to the details page of the book associated with their existing subscription.
+    """
     if existing_subscription:
-        # messages.warning(request, "You already have an active subscription.")
-        return redirect('boipoka_app:book_details', pk=existing_subscription.book.pk)   # Redirect to the book details
+        # Redirect to the book details if the user already has an active subscription.
+        return redirect('boipoka_app:book_details', pk=existing_subscription.book.pk)
 
     if request.method == "POST":
+        # If the request is POST, initialize the form with the submitted data.
         form = SubscriptionForm(request.POST)
         if form.is_valid():
+            # Prepare the subscription object without saving it yet.
             subscription = form.save(commit=False)
-            subscription.user = request.user
-            subscription.subscription_start = timezone.now()
-            subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
-            subscription.save()
-            # messages.success(request, "Your subscription has been created successfully.")
-        return redirect('boipoka_app:book_details', pk=book.pk)  # Redirect to the specific book details
+            subscription.user = request.user  # Associate the subscription with the logged-in user.
+            subscription.subscription_start = timezone.now()  # Set the current time as the start time.
+            """
+            Set the subscription duration:
+            - The subscription end date is set to 30 days from the start date.
+            """
+            subscription.subscription_end = subscription.subscription_start + timedelta(days=30)
+            subscription.save()  # Save the new subscription in the database.
+        
+        # Redirect to the book details page for the selected book after subscription creation.
+        return redirect('boipoka_app:book_details', pk=book.pk)
     else:
+        # If the request is not POST (e.g., GET), initialize an empty subscription form.
         form = SubscriptionForm()
 
+    """
+    Render the subscription creation template:
+    - Pass the form context to display the form for user input.
+    """
     return render(request, 'boipoka_app/create_subscription.html', {'form': form})
+
 
 
 @login_required
