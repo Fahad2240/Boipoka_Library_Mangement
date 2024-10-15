@@ -987,91 +987,132 @@ def change_subscription(request):
 
 @login_required
 def return_book(request, pk):
+    """
+    View function to handle book return for the logged-in user.
+    
+    Retrieves the book and associated borrowing record for the current user, allowing them
+    to mark the book as returned. If the request method is POST, the book is marked as returned,
+    a notification is created, and the user is redirected.
+    """
+    # Retrieve the book and the borrowing record for the user
     book = get_object_or_404(Book, pk=pk)
     borrowing = Borrowing.objects.filter(book=book, user=request.user, returned_at__isnull=True).first()
+
     if request.method == 'POST':
-        borrowing.return_book()
+        borrowing.return_book()  # Mark the book as returned
         borrowing.save()
         # messages.success(request, 'You have successfully returned this book.')
+        
+        # Get current time in Dhaka timezone
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
-        message=f'Your have successfully returned the book {book.title} at {formatted_time}'
+        
+        # Create a notification for the user
+        message = f'You have successfully returned the book {book.title} at {formatted_time}'
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
             timestamp=formatted_time,
         )
+        
+        # Redirect to the next page or the book list if not specified
         redirect_to = request.POST.get('next', 'boipoka_app:book_list')
         return redirect(redirect_to)
-    return render(request, 'boipoka_app/return_book.html', {'book': book,'borrowing':borrowing})
-    
+
+    # Render the return book template
+    return render(request, 'boipoka_app/return_book.html', {'book': book, 'borrowing': borrowing})
+
 @user_passes_test(is_admin)
-def reissue_grant(request,pk):
+def reissue_grant(request, pk):
+    """
+    Admin-only view function to grant a reissue request for a book borrowing record.
+    
+    This function extends the due date by 14 days, updates the borrowing state,
+    and sends a notification to the user. It also sends an email to the user confirming the change.
+    """
     borrowing = get_object_or_404(Borrowing, pk=pk)
-    user=borrowing.user
+    user = borrowing.user
+
     if request.method == 'POST':
-        borrowing.due_date=borrowing.due_date+timedelta(days=14)
-        borrowing.reissue_state=False
+        # Extend the due date by 14 days
+        borrowing.due_date = borrowing.due_date + timedelta(days=14)
+        borrowing.reissue_state = False
         borrowing.save()
+        
+        # Get current time in Dhaka timezone
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
-        borrowing.due_date=borrowing.due_date.astimezone(dhaka_timezone)
-        borrowing.due_date=borrowing.due_date.strftime("%b. %d, %Y, %I:%M %p")
-        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date} .'
+        
+        # Format and store the new due date
+        borrowing.due_date = borrowing.due_date.astimezone(dhaka_timezone)
+        borrowing.due_date = borrowing.due_date.strftime("%b. %d, %Y, %I:%M %p")
+        
+        # Create a notification for the user
+        message = f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted.\nYour new due date is {borrowing.due_date}.'
         Notifications.objects.create(
             subscriber=user,
             message=message,
             timestamp=formatted_time,
         )
-        subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+
+        # Prepare the email details
+        subject = f'Subscription Suspended: Your Subscription Has been Suspended'
         message = (
             f'Dear {borrowing.user.username},\n\n'
-            f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted \n. Your new due date is {borrowing.due_date}.\n'
-            f'Thank you very much .\n\n'
-            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+            f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted.\nYour new due date is {borrowing.due_date}.\n'
+            f'Thank you very much.\n\n'
+            f'Best regards,\n\nBoipoka Admin\n\n'
         )
         recipient = borrowing.user.email
         reply_to_address = ['boipoka_admin@boipoka.com']
-        
-        
+
+        # Send the email in a separate thread
         separate_thread = threading.Thread(
             target=send_email_threaded_single,
-            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient, reply_to_address)
         )
         separate_thread.start()
         
-    return redirect('boipoka_app:user_details',pk=user.pk)
+    return redirect('boipoka_app:user_details', pk=user.pk)
+
 @login_required
 def reissue_book(request, pk):
+    """
+    View function to handle a user's request to reissue a book.
+    
+    Retrieves the book and borrowing record for the current user, allowing them
+    to send a reissue request. If the request method is POST, a notification is created,
+    and the user is redirected to the book details page.
+    """
     book = get_object_or_404(Book, pk=pk)
     user = request.user
+    
     # Retrieve the user's borrowing record for the specific book
     borrowing = get_object_or_404(Borrowing, book=book, user=user, returned_at__isnull=True)
-    
+
     if request.method == 'POST':
-        # Logic to extend the due date (you can customize the extension period)
+        # Logic to extend the due date (customize the extension period if needed)
         borrowing.reissue()
-        message=f'Your reissue request for the book "{borrowing.book.title}" has successfully sent to the Admin.'
+        
+        # Create a notification for the user
+        message = f'Your reissue request for the book "{borrowing.book.title}" has been successfully sent to the Admin.'
         dhaka_timezone = pytz.timezone('Asia/Dhaka')
         current_time_in_dhaka = timezone.now()
         current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
         formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
+        
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
             timestamp=formatted_time,
         )
-        # messages.success(request, 'The book has been successfully reissued. New due date: {}'.format(new_due_date.strftime('%Y-%m-%d')))
 
-    # context = {
-    #     'book': book,
-    #     'borrowing': borrowing,
-    # }
-    return redirect("boipoka_app:book_details",pk=book.pk)
+    return redirect("boipoka_app:book_details", pk=book.pk)
+
 
 # Check if the user is an admin
 
