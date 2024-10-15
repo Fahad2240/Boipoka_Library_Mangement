@@ -480,32 +480,56 @@ def manage_fineapprove(request, pk):
     return redirect('boipoka_app:user_details', pk=user.pk)
 @login_required
 def book_details(request, pk):
+    """
+    Displays the details of a specific book based on its primary key (pk). 
+    
+    - Fetches the book details and retrieves the user's subscription information.
+    - Counts the number of books the user has currently borrowed and not returned.
+    - Checks if the user has borrowed this specific book and if its due date is near.
+    - Flags whether the user has reached their borrowing limit based on their subscription.
+    - Prepares the context data and renders the book details template.
+    """
+    
+    # Fetch the book record based on the provided primary key (pk)
     book = get_object_or_404(Book, pk=pk)
+    
+    # Retrieve the user's current subscription information
     subscription = get_user_subscription(request.user)  # Ensure this retrieves the correct subscription
+    
     # Count how many books the user has currently borrowed and not returned
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
+    
+    # Placeholder for storing information about the book's due date if it is borrowed
     book_due_info = None  
-    # print(borrowed_books_count)
-    check = Borrowing.objects.filter(user=request.user,book=book,reissue_state=True).exists()
-    flag=0
+    
+    # Check if the user has reissued the current book
+    check = Borrowing.objects.filter(user=request.user, book=book, reissue_state=True).exists()
+    
+    # Flag to indicate if the user has reached the maximum borrowing limit
+    flag = 0
     if borrowed_books_count is not None and subscription is not None:
         if borrowed_books_count >= subscription.max_books:
-            flag=1
-    print(check)
-    # Check if the user has borrowed this specific book
+            flag = 1  # Set the flag if the user has reached their borrowing limit
+    
+    # Check if the user has currently borrowed this specific book and not yet returned it
     is_borrowed = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).exists()
+    
+    # Flag to indicate if the due date for the borrowed book is near
     book_due_near = False
     if is_borrowed:
+        # Retrieve the borrowing record for this specific book if it is borrowed
         borrowing_record = Borrowing.objects.filter(user=request.user, book=book, returned_at__isnull=True).first()
         if borrowing_record:
-            book_due_info = borrowing_record.due_date  # You may want to format this if needed
-            book_due_near = borrowing_record.due_date < (timezone.now() + timedelta(days=1)) # This seems to check if due date is close
-    # Get user's subscription information
-    # subscription = Subscription.objects.filter(user=request.user).first()
-
-    # Determine availability: A book is available if it is not borrowed by the user
+            # Get the due date for the borrowed book
+            book_due_info = borrowing_record.due_date  # Consider formatting if needed
+            
+            # Check if the due date is within the next day (due date is near)
+            book_due_near = borrowing_record.due_date < (timezone.now() + timedelta(days=1))
+    
+    # Determine availability: A book is available if it is not currently borrowed by the user
     availability = not is_borrowed 
 
+    # Prepare context data to pass to the template
     context = {
         'book': book,
         'borrowed_books_count': borrowed_books_count,
@@ -514,9 +538,11 @@ def book_details(request, pk):
         'is_borrowed': is_borrowed,
         'book_due_info': book_due_info,
         'book_due_near': book_due_near,
-        'flag':flag,
-        'check': check,  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and 'false' otherwise.  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and 'false' otherwise.  # This is used to check if user has clicked on 'Check Availability' button. If it has, it returns 'true' and '
+        'flag': flag,  # Indicates if borrowing limit is reached
+        'check': check,  # Indicates if the book has been reissued by the user
     }
+    
+    # Render the 'book_details' template with the prepared context data
     return render(request, 'boipoka_app/book_details.html', context)
 
 @login_required
