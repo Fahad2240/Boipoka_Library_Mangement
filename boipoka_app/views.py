@@ -739,94 +739,145 @@ def borrow_book(request, pk):
     # Get the book to borrow
     book = get_object_or_404(Book, pk=pk)
     subscription = get_user_subscription(request.user)  # Ensure this retrieves the correct subscription
-    
+
+    # Count the number of books currently borrowed by the user and not returned
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
+    
+    # Check if the user has reached the maximum limit of borrowed books allowed by their subscription
     if borrowed_books_count == subscription.max_books:
-        # borrowed_books_count+=1)
-        # messages.error(request, "Sorry, you have reached the limit of borrowed books for your subscription.")
-        message=f'Sorry, you have reached the limit of borrowed books for your subscription'
+        """
+        If the user has already borrowed the maximum number of books allowed, 
+        a notification is created informing them that they have reached their limit. 
+        The function then redirects to the book details page without proceeding further.
+        """
+        message = f'Sorry, you have reached the limit of borrowed books for your subscription'
         Notifications.objects.create(
             subscriber=request.user,
             message=message,
             timestamp=timezone.now(),
         )
         return redirect('boipoka_app:book_details', pk=book.pk)
+    
+    # Check if there are any available copies of the book
     if book.available_copies <= 0:
+        # Display an error message if no copies of the book are available for borrowing
         messages.error(request, "No copies of the book are available to borrow.")
         return redirect('boipoka_app:book_details', pk=book.pk)
 
-    # Proceed to create the borrowing record
+    """
+    If the user has not reached their limit and the book is available,
+    create a new borrowing record for the user.
+    """
     Borrowing.objects.create(
         book=book,
         user=request.user,
         subscription=subscription,
     )
+    
+    # Reduce the available copies count for the book and save the update
     book.available_copies -= 1
     book.save()
+
+    # Retrieve borrowing and due date information for the specific borrowing record
     borrow_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().borrowed_on
     due_time = Borrowing.objects.filter(book=book, user=request.user, subscription=subscription).first().due_date
+
+    # Convert the times to the Dhaka timezone for consistency
     dhaka_timezone = pytz.timezone('Asia/Dhaka')
     due_time = due_time.astimezone(dhaka_timezone)
-    due_time = due_time.strftime("%b. %d, %Y, %I:%M %p")
+    due_time = due_time.strftime("%b. %d, %Y, %I:%M %p")  # Format the due date
     borrow_time = borrow_time.astimezone(dhaka_timezone)
-    borrow_time   = borrow_time.strftime("%b. %d, %Y, %I:%M %p")
+    borrow_time = borrow_time.strftime("%b. %d, %Y, %I:%M %p")  # Format the borrow time
+    
+    # Get the current time in Dhaka timezone and format it
     current_time_in_dhaka = timezone.now()
     current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
     formatted_time = current_time_in_dhaka.strftime("%b. %d, %Y, %I:%M %p")
-    message=f'You have successfully borrowed the book {book.title} at {borrow_time}\n.Your have to return this book within {due_time}\n.Otherwise, you will be fined .'
+
+    """
+    Send a notification to the user indicating that they have successfully borrowed the book.
+    The notification includes the borrow time and the due date. 
+    It also warns the user about the fine if the book is not returned on time.
+    """
+    message = f'You have successfully borrowed the book {book.title} at {borrow_time}\n.Your have to return this book within {due_time}\n.Otherwise, you will be fined .'
     Notifications.objects.create(
         subscriber=request.user,
         message=message,
         timestamp=formatted_time,
     )
-    # messages.success(request, "You have successfully borrowed the book.")
-    return redirect('boipoka_app:book_details', pk=book.pk)  # Redirect back to the book details page
+
+    # Redirect back to the book details page after borrowing
+    return redirect('boipoka_app:book_details', pk=book.pk)
+
 
 @user_passes_test(is_not_admin)
 def reading_history(request):
+    """
+    View function to display the user's reading history.
+    
+    This function retrieves the borrowing history of the logged-in user and provides
+    functionalities for searching and filtering the history based on book titles 
+    and borrowing dates.
+    """
     history = Borrowing.objects.filter(user=request.user).order_by('-borrowed_on')
 
     # Handling search functionality
-    search_query = request.GET.get('search', '')
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
+    search_query = request.GET.get('search', '')  # Get the search query from the request
+    start_date = request.GET.get('start_date', '')  # Get the start date from the request
+    end_date = request.GET.get('end_date', '')  # Get the end date from the request
+
+    # Process start_date to make it timezone-aware if provided
     if start_date: 
-        start_date=datetime.strptime(start_date, '%Y-%m-%dT%H:%M')
+        start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M')
         if timezone.is_naive(start_date):
-            start_date=timezone.make_aware(start_date,timezone.get_current_timezone())
+            start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+    
+    # Process end_date to make it timezone-aware if provided
     if end_date:
-        end_date=datetime.strptime(end_date, '%Y-%m-%dT%H:%M')
+        end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M')
         if timezone.is_naive(end_date):
-            end_date=timezone.make_aware(end_date,timezone.get_current_timezone())
+            end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+    
+    # Filter the history based on the search query if provided
     if search_query:
         history = history.filter(book__title__icontains=search_query)
 
+    # Filter the history based on the date range if both start_date and end_date are provided
     if start_date and end_date:
         history = history.filter(borrowed_on__range=[start_date, end_date])
     
-    incomplete={}
+    # Create a dictionary to track which entries are marked as unread
+    incomplete = {}
     for entry in history:
         if entry.marked_as_unread:
-            incomplete[entry.pk]=1
+            incomplete[entry.pk] = 1  # Mark entry as unread
         else:
-            incomplete[entry.pk]=0
+            incomplete[entry.pk] = 0  # Mark entry as read
     
+    # Render the reading history template with the context
     return render(request, 'boipoka_app/readlist.html', {
         'history': history,
         'search_query': search_query,
         'start_date': start_date,
         'end_date': end_date,
-        'incomplete':incomplete
+        'incomplete': incomplete
     })
     
 @user_passes_test(is_not_admin)
 def mark_unread(request, pk):
-    entry = get_object_or_404(Borrowing, pk=pk, user=request.user)
-    print(entry)
+    """
+    View function to mark a specific book entry as unread.
+    
+    This function retrieves the borrowing entry by its primary key (pk)
+    and marks it as unread, allowing users to keep track of books they need 
+    to revisit.
+    """
+    entry = get_object_or_404(Borrowing, pk=pk, user=request.user)  # Get the borrowing entry
+    print(entry)  # Debugging output
     entry.readcheck()  # Mark as unread  
-    print(entry.marked_as_unread)
+    print(entry.marked_as_unread)  # Debugging output
     # messages.success(request, "Book marked as unread successfully.")
-    return redirect('boipoka_app:reading_history')
+    return redirect('boipoka_app:reading_history')  # Redirect back to the reading history
 
 @login_required
 def change_subscription(request):
