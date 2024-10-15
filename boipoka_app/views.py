@@ -31,53 +31,100 @@ def is_admin(user):
     """
     return user.is_staff
 def is_not_admin(user):
+    """
+    Check if the given user is not an admin.
+
+    Args:
+    user (User): The user object to be checked.
+
+    Returns:
+    bool: False if the user is an admin, True otherwise.
+    """
     return not user.is_staff
 
 @login_required
 def notify_user(request):
-    notifications=Notifications.objects.filter(subscriber=request.user)
-    unclickable={}
+    """
+    Handle notifications for a regular user.
+    Only accessible if the user is logged in.
+    """
+    # Fetch all notifications where the subscriber is the current logged-in user
+    notifications = Notifications.objects.filter(subscriber=request.user)
+    
+    # Dictionary to track if notifications are clickable or not
+    unclickable = {}
     for notify in notifications:
+        # If the notification is read, set its clickable status to False; otherwise, set to True
         if notify.is_read == True:
-            unclickable[notify.pk]=False
+            unclickable[notify.pk] = False
         else:
-            unclickable[notify.pk]=True
-    return render(request,'boipoka_app/notification.html',{'notifications':notifications, 'unclickable':unclickable	})
+            unclickable[notify.pk] = True
+    
+    # Render the notification template and pass notifications and clickable status used as context
+    return render(request, 'boipoka_app/notification.html', {'notifications': notifications, 'unclickable': unclickable})
 
 def index(request):
     return render(request,'boipoka_app/index.html')
 
 @login_required
-def makeunread(request,pk):
-    notification=get_object_or_404(Notifications,pk=pk)
-    notification.is_read=True
+def makeunread(request, pk):
+    # Retrieve the notification object by its primary key (pk) for the logged-in user, or return a 404 error if not found
+    notification = get_object_or_404(Notifications, pk=pk)
+    
+    # Mark the notification as read
+    notification.is_read = True
     notification.save()
+    
+    # Redirect the user back to the notifications page
     return redirect('boipoka_app:notifications')
 
 @login_required
-def deletenotifcation(request,pk):
-    notification=get_object_or_404(Notifications,pk=pk)
+def deletenotifcation(request, pk):
+    # Retrieve the notification object by its primary key (pk) for the logged-in user, or return a 404 error if not found
+    notification = get_object_or_404(Notifications, pk=pk)
+    
+    # Delete the notification from the database
     notification.delete()
+    
+    # Redirect the user back to the notifications page
     return redirect('boipoka_app:notifications')
 
 def register(request):
+    # If the user is already logged in, redirect to the homepage or any other preferred page
     if request.user.is_authenticated:
         return redirect('/')
+    
+    # If the request method is POST, process the registration form
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()  # Save the user to the database
-            login(request, user)  # Automatically log the user in
-            return redirect('/login/')  # Redirect to home page or any other page
+            user = form.save()  # Save the new user to the database
+            login(request, user)  # Log the new user in automatically
+            return redirect('/login/')  # Redirect to the login page or another page after registration
     else:
+        # If the request method is GET, display an empty registration form
         form = CustomUserCreationForm()
+    
+    # Render the registration template with the form context
     return render(request, 'boipoka_app/register.html', {'form': form})
 
 
 def fetch_books_data(start_index=0, max_results=10):
+    """
+    Fetch books data from the Google Books API.
+
+    Parameters:
+        start_index (int): The index from which to start fetching books (default is 0).
+        max_results (int): The maximum number of books to fetch (default is 10).
+    
+    Returns:
+        list: A list of dictionaries containing book details like title, author, 
+            description, image, availability status, total copies, and available copies.
+    """
     api_key = settings.GOOGLE_BOOKS_API_KEY
     url = f"https://www.googleapis.com/books/v1/volumes?q=subject:fiction&startIndex={start_index}&maxResults={max_results}&key={api_key}"
     
+    # Send a GET request to the Google Books API
     response = requests.get(url)
     
     if response.status_code == 200:
@@ -86,6 +133,7 @@ def fetch_books_data(start_index=0, max_results=10):
         
         if "items" in data:
             for item in data["items"]:
+                # Extract volume information and image links from each item
                 volume_info = item.get("volumeInfo", {})
                 image_url = volume_info.get("imageLinks", {}).get("thumbnail", "")
                 image_content = None
@@ -94,8 +142,13 @@ def fetch_books_data(start_index=0, max_results=10):
                 if image_url:
                     img_response = requests.get(image_url)
                     if img_response.status_code == 200:
-                        image_content = ContentFile(img_response.content, name=urlparse(image_url).path.split('/')[-1])
+                        # Convert the image response content into a ContentFile
+                        image_content = ContentFile(
+                            img_response.content, 
+                            name=urlparse(image_url).path.split('/')[-1]
+                        )
                 
+                # Append the book's details as a dictionary to the books list
                 books.append({
                     "title": volume_info.get("title", ""),
                     "author": ', '.join(volume_info.get("authors", [])),
@@ -106,13 +159,28 @@ def fetch_books_data(start_index=0, max_results=10):
                     "available_copies": 1,
                 })
         return books
+    
+    # Return an empty list if the API call fails or no books are found
     return []
 
 def create_books_in_db(book_list):
+    """
+    Create or update Book instances in the database based on the given book list.
+
+    Parameters:
+        book_list (list): A list of dictionaries, where each dictionary contains details
+                        about a book such as title, author, description, image, 
+                        availability status, total copies, and available copies.
+
+    For each book in the list:
+        - The function checks if a Book instance with the same title already exists in the database.
+        - If it exists, it does nothing (leaves the existing record unchanged).
+        - If it does not exist, it creates a new Book instance using the provided details.
+    """
     for book_data in book_list:
         # Create or update the Book instance in the database
         Book.objects.get_or_create(
-            title=book_data['title'],
+            title=book_data['title'],  # Check for an existing book with the same title
             defaults={
                 'author': book_data['author'],
                 'description': book_data['description'],
@@ -207,12 +275,12 @@ def book_list(request):
                         print(subscription.is_active)
                 else:
                     if subscription is not None:
-                        print('hare')
+                        # print('hare')
                         subscription.is_active = True
                         subscription.save()
             else:
                 if subscription is not None:
-                    print('hoise')
+                    # print('hoise')
                     subscription.is_active = True
                     subscription.save()
             if reported_issue.fine_paid is True:
@@ -283,24 +351,6 @@ def report_lost_or_damaged(request, pk):
     )
     # Check the number of lost/damaged reports for the user
     incident_count = Borrowing.objects.filter(user=request.user, is_damagedorlost=True).count() 
-
-    # If the book has been marked as damaged/lost for more than a day and the fine is not paid
-    # if reported_issue:
-    #     if reported_issue.damagedlostat and (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
-    #         if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
-    #             if subscription:
-    #                 print('deactive')
-    #                 # messages.warning(request, "Your subscription has been temporarily suspended due to unpaid fines.")
-    #         else:
-    #             if subscription:
-    #                 print('active1')
-    #                 subscription.is_active=True
-    #                 subscription.save()
-    #     else:
-    #         if subscription:
-    #             print('active2')
-    #             subscription.is_active=True
-    #             subscription.save()
     
     # Suspend subscription if incidents are 3 or more
     if incident_count >= 3:
