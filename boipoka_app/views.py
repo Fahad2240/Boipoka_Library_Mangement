@@ -881,10 +881,19 @@ def mark_unread(request, pk):
 
 @login_required
 def change_subscription(request):
+    """
+    View function to change the subscription of the logged-in user.
+
+    This function allows users to change their subscription type based on the 
+    predefined subscription tiers. It checks for the number of currently borrowed 
+    books and ensures that users meet the requirements for downgrading or changing 
+    their subscription.
+    """
     # Get the subscription object for the logged-in user
     subscription = get_object_or_404(Subscription, user=request.user)
     borrowed_books_count = Borrowing.objects.filter(user=request.user, returned_at__isnull=True).count()
-    print(borrowed_books_count)
+    print(borrowed_books_count)  # Debugging output for borrowed books count
+
     if request.method == 'POST':
         # Get the new subscription type from the submitted form
         new_subscription_type = request.POST.get('subscription_type')
@@ -899,23 +908,24 @@ def change_subscription(request):
                 new_max_books = 5
             elif new_subscription_type == 'VIP':
                 new_max_books = 10
-                
-            oldsubtype=subscription.subscription_type
-            newtype=new_subscription_type
-            info =''
-            if new_max_books < subscription.max_books:
-                info='downgraded'
-            elif new_max_books > subscription.max_books:
-                info='upgraded'
             
+            oldsubtype = subscription.subscription_type
+            newtype = new_subscription_type
+            info = ''
+            if new_max_books < subscription.max_books:
+                info = 'downgraded'
+            elif new_max_books > subscription.max_books:
+                info = 'upgraded'
+            
+            # Check if the user has too many borrowed books to downgrade
             if new_max_books <= borrowed_books_count:
-                books_to_return = (borrowed_books_count - new_max_books)+1
+                books_to_return = (borrowed_books_count - new_max_books) + 1
                 messages.error(
                     request,
                     f"You need to return {books_to_return} book(s) to downgrade to the {new_subscription_type} plan."
                 )
                 
-                message=f'Your can not downgrade your subscription  from {oldsubtype} to {newtype} until you return at least {books_to_return} books.'
+                message = f'You cannot downgrade your subscription from {oldsubtype} to {newtype} until you return at least {books_to_return} books.'
                 current_time_in_dhaka = timezone.now()
                 dhaka_timezone = pytz.timezone('Asia/Dhaka')
                 current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
@@ -925,12 +935,13 @@ def change_subscription(request):
                     message=message,
                     timestamp=formatted_time,
                 )
-                next_url=request.POST.get('next','boipoka_app:book_list')
+                next_url = request.POST.get('next', 'boipoka_app:book_list')
                 return redirect(next_url)
 
+            # Check if the user is trying to select the same subscription type
             if new_subscription_type == subscription.subscription_type:
                 messages.error(request, "You are already using the selected subscription type.")
-                message=f'You are already using the selected subscription type.'
+                message = f'You are already using the selected subscription type.'
                 current_time_in_dhaka = timezone.now()
                 dhaka_timezone = pytz.timezone('Asia/Dhaka')
                 current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
@@ -941,16 +952,15 @@ def change_subscription(request):
                     timestamp=formatted_time,
                 )
                 
-                next_url=request.POST.get('next','boipoka_app:book_list')
+                next_url = request.POST.get('next', 'boipoka_app:book_list')
                 return redirect(next_url)
-            
-            
-            
+
+            # Update the subscription details and save
             subscription.subscription_type = new_subscription_type
             subscription.max_books = new_max_books
-            # Save the updated subscription
-            subscription.save()
-            message=f'Your subscription has been {info} from {oldsubtype} to {newtype} successfully.'
+            subscription.save()  # Save the updated subscription
+
+            message = f'Your subscription has been {info} from {oldsubtype} to {newtype} successfully.'
             current_time_in_dhaka = timezone.now()
             dhaka_timezone = pytz.timezone('Asia/Dhaka')
             current_time_in_dhaka = current_time_in_dhaka.astimezone(dhaka_timezone)
@@ -961,9 +971,9 @@ def change_subscription(request):
                 timestamp=formatted_time,
             )
             
-            print(formatted_time)
+            print(formatted_time)  # Debugging output for formatted time
             # messages.success(request, "Subscription updated successfully.")
-            next_url=request.POST.get('next','boipoka_app:book_list')
+            next_url = request.POST.get('next', 'boipoka_app:book_list')
             return redirect(next_url)
         else:
             messages.error(request, "Invalid subscription type.")
@@ -974,7 +984,6 @@ def change_subscription(request):
         'tier_choices': Subscription.TIER_CHOICES,
     }
     return render(request, 'boipoka_app/change_subscription.html', context)
-
 
 @login_required
 def return_book(request, pk):
