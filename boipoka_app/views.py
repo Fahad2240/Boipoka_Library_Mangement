@@ -420,32 +420,64 @@ def report_lost_or_damaged(request, pk):
     return redirect('boipoka_app:book_list')
 
 @login_required
-def manage_fines(request,pk):
-    reported=get_object_or_404(Borrowing,user=request.user,is_damagedorlost=True,book__pk=pk)
-    reported.fine_paid=True
+def manage_fines(request, pk):
+    """
+    Manages the fine payment process for a user-reported damaged or lost book.
+    
+    - Fetches the specific borrowing record for the currently logged-in user where the book has been reported as damaged/lost.
+    - Marks the fine as paid for the reported borrowing instance.
+    - Sends a notification to the user confirming the receipt of the fine payment and informing them to wait for admin approval.
+    - Redirects the user back to the book list page.
+    """
+    # Fetch the borrowing instance where the book is reported as damaged/lost for the logged-in user
+    reported = get_object_or_404(Borrowing, user=request.user, is_damagedorlost=True, book__pk=pk)
+    
+    # Mark the fine as paid
+    reported.fine_paid = True
     reported.save()
-    message=f'We have successfully receive the fine for being damged/lost of the book "{reported.book.title}"\n.Please wait for the approval '
+    
+    # Send a notification to the user about the fine payment
+    message = f'We have successfully received the fine for the damage/loss of the book "{reported.book.title}". Please wait for the approval.'
     Notifications.objects.create(
         subscriber=request.user,
         message=message,
         timestamp=timezone.now(),
     )
-    return redirect('boipoka_app:book_list')
     
+    # Redirect the user back to the book list page
+    return redirect('boipoka_app:book_list')
+
+
 @user_passes_test(is_admin)
-def manage_fineapprove(request,pk):
-    borrowing=get_object_or_404(Borrowing,pk=pk)
-    user=borrowing.user 
+def manage_fineapprove(request, pk):
+    """
+    Allows an admin to approve the fine payment for a reported damaged or lost book.
+    
+    - Fetches the specific borrowing record based on the provided primary key (pk).
+    - Marks the fine as approved by the admin.
+    - Sends a notification to the user indicating that the fine payment has been approved.
+    - Redirects the admin to the user details page after approval.
+    """
+    # Fetch the borrowing instance by primary key (pk)
+    borrowing = get_object_or_404(Borrowing, pk=pk)
+    user = borrowing.user  # Get the user associated with the borrowing record
+    
+    # Process the approval when the form is submitted via POST
     if request.method == 'POST':
-        borrowing.fine_paid_approved=True
+        # Mark the fine as approved by the admin
+        borrowing.fine_paid_approved = True
         borrowing.save()
-        message=f'You have approved your payment for being damaged/lost of the book "{borrowing.book.title}" .'
+        
+        # Send a notification to the user about the fine approval
+        message = f'Your payment for the damage/loss of the book "{borrowing.book.title}" has been approved.'
         Notifications.objects.create(
             subscriber=user,
             message=message,
             timestamp=timezone.now(),
         )
-    return redirect('boipoka_app:user_details',pk=user.pk)
+    
+    # Redirect to the user details page for the admin view
+    return redirect('boipoka_app:user_details', pk=user.pk)
 @login_required
 def book_details(request, pk):
     book = get_object_or_404(Book, pk=pk)
