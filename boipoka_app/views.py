@@ -193,29 +193,53 @@ def create_books_in_db(book_list):
 
 @login_required
 def book_list(request):
+    """
+    View to display the list of books available for the user.
+
+    - Retrieves the user's subscription information.
+    - If the user is not an admin and does not have an active subscription, redirects them to the subscription page.
+    - Fetches available books and updates their status based on borrowing and damage history.
+    - Suspends the user's subscription if there are unpaid fines for damaged or lost books.
+
+    Parameters:
+        request (HttpRequest): The HTTP request object containing metadata about the request.
+
+    Returns:
+        HttpResponse: The rendered HTML page displaying the list of books along with their statuses and user-related information.
+    """
     # Retrieve the user's subscription
     subscription = Subscription.objects.filter(user=request.user).first()
+    
     # If the user is not an admin and does not have a subscription, redirect them to the subscription page
-    if  is_not_admin(request.user):
-        if subscription is None :
+    if is_not_admin(request.user):
+        if subscription is None:
             return redirect('boipoka_app:subscription')
 
     # Get all available books
-    books = Book.objects.filter(available_copies__gte=0)  
+    books = Book.objects.filter(available_copies__gte=0)
+    
+    # Dictionaries to track book statuses and other related information
     book_availability = {}
     borrow_info = {}
     isreported = {}
-    paidlist={}
-    borrowedornot={}
-    book_due_near={}
-    # Create or update books in the database from external source
+    paidlist = {}
+    borrowedornot = {}
+    book_due_near = {}
+
+    # Create or update books in the database from an external source
     create_books_in_db(fetch_books_data(0, 10))
 
     for book in books:
+        # Fetch the specific borrowed book record which is reported as damaged/lost by the user
         reported_issue = Borrowing.objects.filter(user=request.user, book=book, is_damagedorlost=True).first()
-        damagedhistory=DamagedorLostHistory.objects.filter(user=request.user,book=book).first()
+        
+        # Fetch the history of damaged/lost instances for this book and user.
+        # This includes past borrowing records that may have been deleted but are kept in this history.
+        damagedhistory = DamagedorLostHistory.objects.filter(user=request.user, book=book).first()
+        
+        # If the book has a reported issue but no existing damaged history, create a new history entry
         if reported_issue is not None:
-            if damagedhistory is  None :
+            if damagedhistory is None:
                 DamagedorLostHistory.objects.create(
                     book=reported_issue.book,
                     user=request.user,
@@ -223,50 +247,49 @@ def book_list(request):
                     fine_paid_approved=reported_issue.fine_paid_approved,
                     fine_paid_at=reported_issue.fine_paid_at
                 )
-            if reported_issue.fine_paid_approved == True and damagedhistory is not None :
-                
-            # damagedhistory.fine_paid=reported_issue.fine_paid
-            # damagedhistory.fine_paid_approved=reported_issue.fine_paid
-                damagedhistory.fine_paid_approved=reported_issue.fine_paid_approved
-                damagedhistory.isdeleted=True
+            # If there's an existing damaged history, update it if the fine is approved
+            if reported_issue.fine_paid_approved and damagedhistory is not None:
+                damagedhistory.fine_paid_approved = reported_issue.fine_paid_approved
+                damagedhistory.isdeleted = True  # Mark the history as deleted after fine approval
                 damagedhistory.save()
+
+                # Print statements for debugging
                 print(damagedhistory.book.title)
                 print(damagedhistory.fine_paid_approved)
                 print(damagedhistory.isdeleted)
-            
+                
+                # Delete the reported issue after updating the history
                 reported_issue.delete()
-    # If the book has been marked as damaged/lost for more than a day and the fine is not paid
+
+        # If the book has been marked as damaged/lost for more than a day and the fine is not paid
         if reported_issue:
             print(timezone.now() > reported_issue.damagedlostat + timedelta(days=1))
-            if (timezone.now() > reported_issue.damagedlostat + timedelta(days=1)):
+            if timezone.now() > reported_issue.damagedlostat + timedelta(days=1):
                 if not reported_issue.fine_paid_at or reported_issue.fine_paid_at >= reported_issue.damagedlostat + timedelta(days=1):
                     if subscription is not None:
-                        print('kire')
+                        # Suspend the subscription due to unpaid fines
                         subscription.is_active = False
                         subscription.save()
-                        subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+                        subject = f'Subscription Suspended: Your Subscription Has been Suspended'
                         message = (
                             f'Dear {subscription.user.username},\n\n'
                             f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fines.\n'
-                            f'To reactivate your subscription, please pay the unpaid fines as soon as possible".\n\n'
-                            f'Thank you very much .\n\n'
-                            f'\n\n Best regards, \n\n Boipoka Admin\n\n'
+                            f'To reactivate your subscription, please pay the unpaid fines as soon as possible.\n\n'
+                            f'Thank you very much.\n\n'
+                            f'Best regards,\n\nBoipoka Admin\n\n'
                         )
-                        recipient= subscription.user.email
+                        recipient = subscription.user.email
                         reply_to_address = ['boipoka_admin@boipoka.com']
-                    
-                    
+                        
+                        # Send email notification in a separate thread
                         separate_thread = threading.Thread(
                             target=send_email_threaded_single,
-                            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+                            args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient, reply_to_address)
                         )
                         separate_thread.start()
-                        message=f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fine. '
-                        
-                        
-                        
-        
-                        
+
+                        # Create an in-app notification
+                        message = f'Your subscription plan {subscription.subscription_type} has been temporarily suspended due to unpaid fine.'
                         Notifications.objects.create(
                             subscriber=request.user,
                             message=message,
@@ -275,33 +298,31 @@ def book_list(request):
                         print(subscription.is_active)
                 else:
                     if subscription is not None:
-                        # print('hare')
+                        # Reactivate the subscription if the fine is paid
                         subscription.is_active = True
                         subscription.save()
             else:
                 if subscription is not None:
-                    # print('hoise')
+                    # Ensure the subscription remains active if within the time limit
                     subscription.is_active = True
                     subscription.save()
-            if reported_issue.fine_paid is True:
-                paidlist[book.pk]=True
-                # if reported_issue.fine_paid_approved is True:
-                #     reported_issue.delete()
+
+            if reported_issue.fine_paid:
+                paidlist[book.pk] = True
             else:
-                paidlist[book.pk]=False
-        
-            # Update isreported to track both the status and payment information
+                paidlist[book.pk] = False
+
         # Check if the user has borrowed this book
-        is_borrowed = Borrowing.objects.filter(user=request.user,returned_at__isnull=True ,book=book).exists()
+        is_borrowed = Borrowing.objects.filter(user=request.user, returned_at__isnull=True, book=book).exists()
         if is_borrowed:
             borrowed = Borrowing.objects.filter(user=request.user, book=book).first()
             temp = borrowed.due_date < (timezone.now() + timedelta(days=1))
-            borrowedornot[book.pk]=True
-            book_due_near[book.pk]=temp
+            borrowedornot[book.pk] = True
+            book_due_near[book.pk] = temp
             isreported[book.pk] = borrowed.is_damagedorlost
         else:
-            book_due_near[book.pk]=False
-            borrowedornot[book.pk]=False
+            book_due_near[book.pk] = False
+            borrowedornot[book.pk] = False
             isreported[book.pk] = False  # Default value if the book is not borrowed
 
         # Determine if the book is available
@@ -311,12 +332,9 @@ def book_list(request):
         # Update availability if no copies are left
         if book.available_copies == 0:
             book_availability[book.pk] = False
-            
-        # print(subscription.is_active)
 
     # Check if the user has a reactivation flag set in the session
     reactivation_flag = request.session.pop('reactivation_flag', False)
-    # print(reactivation_flag)
 
     return render(request, 'boipoka_app/book_list.html', {
         'books': books,
@@ -326,7 +344,7 @@ def book_list(request):
         'reactivation_flag': reactivation_flag,
         'paidlist': paidlist,
         'borrowedornot': borrowedornot,
-        'book_due_near':book_due_near
+        'book_due_near': book_due_near
     })
 
 
