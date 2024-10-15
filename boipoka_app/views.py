@@ -547,31 +547,75 @@ def book_details(request, pk):
 
 @login_required
 def new_subscription_creation(request):
+    """
+    This view function handles the creation of a new subscription for the user.
+    It responds to both POST and GET requests:
+    - For POST: It processes the submitted form data and creates a subscription if valid.
+    - For GET: It renders the subscription form for user input.
+    """
+
     if request.method == "POST":
+        # If the request is a POST, the form is initialized with the posted data.
         form = SubscriptionForm(request.POST)
+        
+        """
+        Check if the form data is valid:
+        - If valid, proceed to check if the user already has an active subscription.
+        - If an existing subscription is found, redirect to the book list page.
+        - Otherwise, create a new subscription and set relevant details.
+        """
         if form.is_valid():
             existing_subscription = Subscription.objects.filter(user=request.user).first()
             if existing_subscription:
+                # If the user already has a subscription, redirect to prevent duplicate subscriptions.
                 return redirect('boipoka_app:book_list')
+            
+            # Prepare the subscription without saving to assign additional details.
             subscription = form.save(commit=False)
-            subscription.user = request.user
-            subscription.subscription_start = timezone.now()
-            subscription.subscription_end = subscription.subscription_start + timedelta(days=30)  # Set end date for 30 days
-            subscription.save()
-            subtype=subscription.subscription_type
+            subscription.user = request.user  # Associate the subscription with the current user.
+            subscription.subscription_start = timezone.now()  # Set the current time as the start time.
+            """
+            Set the subscription end date:
+            - Adds 30 days from the start date as the duration of the subscription.
+            """
+            subscription.subscription_end = subscription.subscription_start + timedelta(days=30)
+            subscription.save()  # Save the subscription details in the database.
+            
+            # Retrieve the subscription type to include it in the notification message.
+            subtype = subscription.subscription_type
+            
+            """
+            Timezone and date formatting:
+            - Convert the end date to Dhaka timezone for accurate user display.
+            - Format the end date as a readable string (e.g., "Jan. 01, 2025, 01:00 PM").
+            """
             dhaka_timezone = pytz.timezone('Asia/Dhaka')
-            end_date=subscription.subscription_end.astimezone(dhaka_timezone)
-            end_date=end_date.strftime('%b. %d, %Y, %I:%M %p')  # Format the end date
-            message=f'Your subscription of  {subtype} plan has been created susccessfully \n.It will end on {end_date}.'
+            end_date = subscription.subscription_end.astimezone(dhaka_timezone)
+            end_date = end_date.strftime('%b. %d, %Y, %I:%M %p')
+            
+            """
+            Create and send a notification to the user:
+            - The notification informs the user of their subscription start and end details.
+            - The timestamp records when the notification is created.
+            """
+            message = f'Your subscription of {subtype} plan has been created susccessfully \n.It will end on {end_date}.'
             Notifications.objects.create(
                 subscriber=request.user,
                 message=message,
                 timestamp=timezone.now(),
             )
+        
+        # After processing the subscription, redirect the user to the book list.
         return redirect('boipoka_app:book_list')
     else:
+        # If the request is not POST (e.g., GET), display an empty subscription form.
         form = SubscriptionForm()
-    return render(request, 'boipoka_app/new_subscription_creation.html',{'form':form})
+    
+    """
+    Render the subscription creation template:
+    - Pass the form context to display the subscription form for user input.
+    """
+    return render(request, 'boipoka_app/new_subscription_creation.html', {'form': form})
 @login_required
 def subscription(request):
     return render(request,'boipoka_app/subscription.html')
