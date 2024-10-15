@@ -333,15 +333,11 @@ def book_list(request):
         if book.available_copies == 0:
             book_availability[book.pk] = False
 
-    # Check if the user has a reactivation flag set in the session
-    reactivation_flag = request.session.pop('reactivation_flag', False)
-
     return render(request, 'boipoka_app/book_list.html', {
         'books': books,
         'book_availability': book_availability,
         'borrow_info': borrow_info,
         'isreported': isreported,
-        'reactivation_flag': reactivation_flag,
         'paidlist': paidlist,
         'borrowedornot': borrowedornot,
         'book_due_near': book_due_near
@@ -350,59 +346,76 @@ def book_list(request):
 
 @login_required
 def report_lost_or_damaged(request, pk):
-    # Fetch the borrowing instance
+    """
+    Handle the reporting of a lost or damaged book by a user.
+    This function updates the borrowing instance to mark the book 
+    as lost or damaged, applies a fine, and handles subscription 
+    suspensions if necessary.
+    """
+    
+    # Fetch the borrowing instance for the specified book
     borrowing = Borrowing.objects.filter(user=request.user, book__pk=pk).first()
+    # Retrieve the user's subscription status
     subscription = get_user_subscription(request.user)
-    # Handle case where no borrowing record is found
+    
+    # Handle the case where no borrowing record is found
     if not borrowing:
         messages.error(request, "No borrowing record found for this book.")
         return redirect('boipoka_app:book_list')
     
     # Mark the book as damaged or lost
     borrowing.is_damagedorlost = True
-    borrowing.save()
-    message=f'The book "{borrowing.book.title}" has been reported as lost/damaged. A fine of 500 BDT has been applied.'
+    borrowing.save()  # Save the changes to the borrowing instance
+    
+    # Create a notification message for the user about the reported book
+    message = f'The book "{borrowing.book.title}" has been reported as lost/damaged. A fine of 500 BDT has been applied.'
     Notifications.objects.create(
         subscriber=request.user,
         message=message,
         timestamp=timezone.now(),
     )
+    
     # Check the number of lost/damaged reports for the user
     incident_count = Borrowing.objects.filter(user=request.user, is_damagedorlost=True).count() 
     
-    # Suspend subscription if incidents are 3 or more
+    # Suspend subscription if the number of incidents is 3 or more
     if incident_count >= 3:
         if subscription:
-            subscription.is_active = False  # Suspend the subscription
-            subscription.save()
-            subject = f'Subscritpion Suspended: Your Subscription Has been Suspended'
+            # Suspend the user's subscription
+            subscription.is_active = False  # Update subscription status
+            subscription.save()  # Save the updated subscription status
+            
+            # Prepare an email notification for the user regarding the suspension
+            subject = f'Subscription Suspended: Your Subscription Has been Suspended'
             message = (
                 f'Dear {subscription.user.username},\n\n'
-                f'Your subscription plan {subscription.subscription_type} has been suspended due to multiple lost/damaged reports..\n'
-                f'Now, you cannot access login session.To reactivate your subscription, please contact with the Boipoka admin as soon as possible.\n\n'
-                f'Thank you very much .\n\n'
+                f'Your subscription plan {subscription.subscription_type} has been suspended due to multiple lost/damaged reports.\n'
+                f'Now, you cannot access the login session. To reactivate your subscription, please contact the Boipoka admin as soon as possible.\n\n'
+                f'Thank you very much.\n\n'
                 f'\n\n Best regards, \n\n Boipoka Admin\n\n'
             )
             recipient = subscription.user.email
             reply_to_address = ['boipoka_admin@boipoka.com']
             
-            
+            # Send an email notification in a separate thread to avoid blocking the request
             separate_thread = threading.Thread(
                 target=send_email_threaded_single,
-                args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient,reply_to_address)
+                args=(subject, message, settings.DEFAULT_FROM_EMAIL, recipient, reply_to_address)
             )
             separate_thread.start()
-            # messages.warning(request, "Your subscription has been suspended due to multiple lost/damaged reports.")
-            message=f'Your subscription has been suspended due to multiple lost/damaged reports\n.Please contact with the Boipoka admin as soon as possible'
+            
+            # Create a notification for the user about the subscription suspension
+            message = f'Your subscription has been suspended due to multiple lost/damaged reports. Please contact the Boipoka admin as soon as possible.'
             Notifications.objects.create(
                 subscriber=request.user,
                 message=message,
                 timestamp=timezone.now(),
             )
-            # Send a notification email here if needed
+            
+            # Redirect the user to the login page if subscription is suspended
             return redirect('boipoka_app:login')
 
-    # Display a success message and redirect back to the book list
+    # Display a success message to the user and redirect back to the book list
     messages.success(request, f"The book '{borrowing.book.title}' has been reported as lost/damaged. A fine of 500 BDT has been applied.")
     return redirect('boipoka_app:book_list')
 
@@ -417,9 +430,6 @@ def manage_fines(request,pk):
         message=message,
         timestamp=timezone.now(),
     )
-    #Set a flag in the session indicating the payment
-    # if reported.fine_paid == True:
-    request.session['reactivation_flag'] = True  # This flag indicates that payment was made
     return redirect('boipoka_app:book_list')
     
 @user_passes_test(is_admin)
