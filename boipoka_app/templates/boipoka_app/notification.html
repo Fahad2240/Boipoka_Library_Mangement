@@ -1,39 +1,39 @@
-{% extends 'boipoka_app/base.html' %}
-{% load book_filters %}
-{% block title %}Notifications{% endblock %}
+{% extends 'boipoka_app/base.html' %}  {# Extend the base template for consistent layout #}
+{% load book_filters %}  {# Load custom template filters for book functionality #}
+{% block title %}Notifications{% endblock %}  {# Set the page title #}
 
 {% block content %}
-    {% if notifications %}
+    {% if notifications %}  {# Check if there are any notifications to display #}
         <div class="mt-20 flex flex-col gap-5">
-            <ul class="flex flex-col gap-5 text-2xl px-12 py-9 mt-24  rounded " style="position:absolute; left:20%;right:20%;margin:auto;">
-                {% for rec in notifications %}
-                    {% if unclickable|get_item:rec.pk %}
-                        <a href="{% url 'boipoka_app:makeunread' rec.pk %}" style="text-decoration: none;">
+            <ul class="flex flex-col gap-5 text-2xl px-12 py-9 mt-24 rounded " style="position:absolute; left:20%;right:20%;margin:auto;">
+                {% for rec in notifications %}  {# Iterate through each notification record #}
+                    {% if unclickable|get_item:rec.pk %}  {# Check if the notification is marked as unclickable #}
+                        <a href="{% url 'boipoka_app:makeunread' rec.pk %}" style="text-decoration: none;">  {# Link to mark the notification as unread #}
                             <div class="px-12 py-10 flex flex-col gap-10 rounded" style="background-color:white !important;">
-                                <li class="text-center">
+                                <li class="text-center">  {# Display the notification message #}
                                     {{ rec.message }}
                                 </li>
-                                <div  class=" px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
-                                    <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>
+                                <div class="px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
+                                    <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>  {# Link to delete the notification #}
                                 </div>
-                                <sub>{{rec.timestamp}}</sub>
+                                <sub>{{ rec.timestamp }}</sub>  {# Display the timestamp of the notification #}
                             </div>
                         </a>
-                    {% else %}
+                    {% else %}  {# If the notification is not unclickable #}
                         <div class="px-12 py-10 flex flex-col gap-10 rounded" style="background-color:white !important;">
-                            <li class="text-center">
+                            <li class="text-center">  {# Display the notification message #}
                                 {{ rec.message }}
                             </li>
-                            <div  class="mx-50 px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
-                                <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>
+                            <div class="mx-50 px-4 py-2 text-white text-xl" style="background-color:red !important; width:100px !important; height:50px !important;">
+                                <a href="{% url 'boipoka_app:deletenotification' rec.pk %}">Delete</a>  {# Link to delete the notification #}
                             </div>
-                            <sub>{{rec.timestamp}}</sub>
+                            <sub>{{ rec.timestamp }}</sub>  {# Display the timestamp of the notification #}
                         </div>
                     {% endif %}
-                {% endfor %}
+                {% endfor %}  {# End of notifications loop #}
             </ul>
         </div>
-    {% else %}
-        <p class="text-center mt-20 text-xl text-white">No notifications available.</p>
+    {% else %}  {# If there are no notifications #}
+        <p class="text-center mt-20 text-xl text-white">No notifications available.</p>  {# Message to inform the user #}
     {% endif %}
 {% endblock %}
