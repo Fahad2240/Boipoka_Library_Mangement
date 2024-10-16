@@ -3,6 +3,7 @@ from django.core.mail import EmailMessage  # Import EmailMessage for sending ema
 import logging  # Import logging for logging errors and information
 from smtplib import SMTPException  # Import SMTPException to handle email sending errors
 import threading  # Import threading for sending emails in separate threads
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render, redirect  # Import necessary functions for view handling
 from django.contrib.auth import login, authenticate, logout  # Import authentication functions
 from django.urls import reverse
@@ -71,6 +72,9 @@ def makeunread(request, pk):
     # Retrieve the notification object by its primary key (pk) for the logged-in user, or return a 404 error if not found
     notification = get_object_or_404(Notifications, pk=pk)
     
+    if notification.subscriber != request.user:
+        return HttpResponseForbidden("You are not allowed to access this notification.")
+    
     # Mark the notification as read
     notification.is_read = True
     notification.save()
@@ -83,6 +87,9 @@ def deletenotifcation(request, pk):
     # Retrieve the notification object by its primary key (pk) for the logged-in user, or return a 404 error if not found
     notification = get_object_or_404(Notifications, pk=pk)
     
+    # Ensure the notification belongs to the logged-in user
+    if notification.subscriber != request.user:
+        return HttpResponseForbidden("You are not allowed to access this notification.")
     # Delete the notification from the database
     notification.delete()
     
