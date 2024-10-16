@@ -1038,6 +1038,7 @@ def reissue_grant(request, pk):
     if request.method == 'POST':
         # Extend the due date by 14 days
         borrowing.due_date = borrowing.due_date + timedelta(days=14)
+        borrowing.borrowed_on=timezone.now()
         borrowing.reissue_state = False
         borrowing.save()
         
@@ -1052,8 +1053,7 @@ def reissue_grant(request, pk):
         borrowing.due_date = borrowing.due_date.strftime("%b. %d, %Y, %I:%M %p")
         
         #Format and store the new borrowing issued date
-        borrowing.borrowed_on=timezone.now()
-        borrowing.save()
+        
         borrowing.borrowed_on = borrowing.borrowed_on.astimezone(dhaka_timezone)
         borrowing.borrowed_on = borrowing.borrowed_on.strftime("%b. %d, %Y, %I:%M %p")
         
