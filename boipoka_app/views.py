@@ -1051,6 +1051,14 @@ def reissue_grant(request, pk):
         borrowing.due_date = borrowing.due_date.astimezone(dhaka_timezone)
         borrowing.due_date = borrowing.due_date.strftime("%b. %d, %Y, %I:%M %p")
         
+        #Format and store the new borrowing issued date
+        borrowing.borrowed_on=timezone.now()
+        borrowing.borrowed_on = borrowing.borrowed_on.astimezone(dhaka_timezone)
+        borrowing.borrowed_on = borrowing.borrowed_on.strftime("%b. %d, %Y, %I:%M %p")
+        
+        # Update the borrowing state and save
+        borrowing.save()
+        
         # Create a notification for the user
         message = f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted.\nYour new due date is {borrowing.due_date}.'
         Notifications.objects.create(
@@ -1060,7 +1068,7 @@ def reissue_grant(request, pk):
         )
 
         # Prepare the email details
-        subject = f'Reissue Request Grant Accpetance : "{borrowing.book.title}" Borrowed on {borrowing.borrowed_on} '
+        subject = f'Reissue Request Grant Accpetance : "{borrowing.book.title}" Reissued on {borrowing.borrowed_on} '
         message = (
             f'Dear {borrowing.user.username},\n\n'
             f'Your reissue request for the book "{borrowing.book.title}" has successfully been granted.\nYour new due date is {borrowing.due_date}.\n'
