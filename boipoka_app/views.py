@@ -97,9 +97,6 @@ def deletenotifcation(request, pk):
     return redirect('boipoka_app:notifications')
 
 def register(request):
-    # If the user is already logged in, redirect to the homepage or any other preferred page
-    if request.user.is_authenticated:
-        return redirect('/')
     
     # If the request method is POST, process the registration form
     if request.method == 'POST':
