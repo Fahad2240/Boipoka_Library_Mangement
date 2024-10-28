@@ -267,7 +267,8 @@ def book_list(request):
                 
                 # Delete the reported issue after updating the history
                 reported_issue.delete()
-                print(reported_issue)
+                if reported_issue is not None:
+                    print('hey')
 
         # If the book has been marked as damaged/lost for more than a day and the fine is not paid
         if reported_issue:

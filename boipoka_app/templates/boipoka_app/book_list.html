@@ -81,7 +81,7 @@
                         <p class="text-dark mx-20">{{ book.author }}</p>
                     </div>
                     <!--If  a particular is not available to borrow for a particular user having subscription -->
-                    {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription and borrow_info|get_item:book.pk %}
+                    {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription and borrowedornot|get_item:book.pk %}
                         <div class="flex flex-row items-center justify-between gap-2">
                             <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
                             <!--Checking if the book is reported by user to admin -->
