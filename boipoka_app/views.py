@@ -105,6 +105,9 @@ def register(request):
             user = form.save()  # Save the new user to the database
             login(request, user)  # Log the new user in automatically
             return redirect('/login/')  # Redirect to the login page or another page after registration
+        else:
+            # If the form is invalid, render the same page with the form errors
+            return render(request, 'boipoka_app/register.html', {'form': form})
     else:
         # If the request method is GET, display an empty registration form
         form = CustomUserCreationForm()
@@ -264,6 +267,7 @@ def book_list(request):
                 
                 # Delete the reported issue after updating the history
                 reported_issue.delete()
+                print(reported_issue)
 
         # If the book has been marked as damaged/lost for more than a day and the fine is not paid
         if reported_issue:
