@@ -101,26 +101,26 @@ DEFAULT_FROM_EMAIL = "fahadish861@gmail.com"
 
 NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'postgres',  # Database name you created
-            'USER': 'postgres',       # Username you created or 'postgres'
-            'PASSWORD': 'admin',   # Password for the user
-            'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
-            'PORT': '5432',     
-        }
+# if DEBUG:
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',  # Database name you created
+        'USER': 'postgres',       # Username you created or 'postgres'
+        'PASSWORD': 'admin',   # Password for the user
+        'HOST': 'localhost',           # Or the IP address of your PostgreSQL server (default: localhost)
+        'PORT': '5432',     
     }
+}
 
-else:
-    DATABASES = {
-        'default': dj_database_url.config(
-            # Replace this value with your local database's connection string.
-            default=os.environ.get('DATABASES'),
-            conn_max_age=600
-            )
-        }
+# else:
+#     DATABASES = {
+#         'default': dj_database_url.config(
+#             # Replace this value with your local database's connection string.
+#             default=os.environ.get('DATABASES'),
+#             conn_max_age=600
+#             )
+#         }
 
     
     
@@ -172,12 +172,12 @@ TIME_ZONE = 'Asia/Dhaka'  # e.g., 'Asia/Dhaka'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-if not DEBUG:
-    # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    # Enable the WhiteNoise storage backend, which compresses static files to reduce disk use
-    # and renames the files with unique names for each version to support long-term caching
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# if not DEBUG:
+#     # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
+#     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+#     # Enable the WhiteNoise storage backend, which compresses static files to reduce disk use
+#     # and renames the files with unique names for each version to support long-term caching
+#     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
