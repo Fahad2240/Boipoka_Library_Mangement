@@ -1,0 +1,198 @@
+{% extends 'boipoka_app/base.html' %}
+{% block content %}
+<h2 class=' text-white text-4xl text-center'>User Details</h2>
+<ul class=" mt-16  flex flex-col items-center justify-between gap-10">
+    <!-- If the Admin have users of his Boipoka Service   -->
+    {% if context.user  %}
+        <li class='text-xl bg-slate-600 rounded-sm px-10 py-10 font-bold'>
+            <!-- Username    -->
+            <h3 >UserName: <span class='font-bold '>{{ context.user.username }}<span></h3>
+            <!-- If the user Subscription   -->
+            {% if context.subscription %}
+                <div class="flex flex-row gap-3 font-bold">
+                    <!-- Subscription Type  -->
+                    <p>Subscription Type: {{ context.user.subscription.subscription_type }}</p>
+                    <!-- Delete Subscription -->
+                    <form action="{% url 'boipoka_app:delete_subscription' pk=context.user.pk %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class=" px-2 py-1 bg-red-700 text-white ">Delete Subscription</button>
+                    </form>
+                </div>
+                <div class="mt-5 mb-5 flex flex-row gap-3 font-bold">
+                    <!-- Subscription Active Status -->
+                    <p>Active Status : {% if context.subscription.is_active %} active {% else %} suspended {% endif %}
+                    <!-- If Subscription is not active it will display a Reactivate button for Admin to reactive Subscription of this user  -->
+                    {% if not context.subscription.is_active %}
+                        <form action="{% url 'boipoka_app:reactivesubscription' context.subscription.pk %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button  type=submit class=" px-2 py-1 text-white " style="background-color:#004953 !important">Reactivate</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <!-- Maximum books,Subscrition Staring and Ending Date  -->
+                <p>Maximum Books: {{ context.user.subscription.max_books }}</p>
+                <p>Subscription Starting Date: {{ context.user.subscription.subscription_start }}</p>
+                <!-- Subscription Staring Date Updation   -->
+                <form action="{% url 'boipoka_app:manage_subscriptions_starting' context.user.subscription.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="datetime-local" name="start-date"  required>
+                    <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription Start Date</button>
+                </form>
+                <!-- Subscription Ending Date Updation  -->
+                <p>Subscription Ending Date: {{context.user.subscription.subscription_end }}</p>
+                <form action="{% url 'boipoka_app:manage_subscriptions_ending' context.user.subscription.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="datetime-local" name="expire-date"  required>
+                    <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Subscription End Date</button>
+                </form>
+                <!-- If This user have borrowed books   -->
+                {% if context.borrowings %}
+                    <p class="text-center font-semibold">Borrowed Books</p>
+                    <!-- If the borrowed books are Returned  -->
+                    {% if context.returned_books %}
+                        <p class="mt-5 font-bold" style="color:#FEBE10 !important">Returned Books : </p>
+                        <ul class="mt-5 text-white font-bold">
+                        <!-- Returned books titles and Returned time -->
+                        {% for item in context.returned_books %}
+                            <div class="flex flex-row items-center gap-5">
+                                    <li>{{ item.book.title }} - Due: {{ item.due_date }} Returned at - {{item.returned_at}}
+                                    </li>
+                                    <!-- Admin can send Notification of this Returned Book Event  by email to the user from this button   -->
+                                    <form action="{% url 'boipoka_app:send_returned_notifications' context.user.pk %}" method="post" >
+                                        {% csrf_token %}
+                                        <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                    </form>
+                            </div>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <!-- If the borrowed books are not Returned  -->
+                    {% if context.notreturnedbooks %}
+                    <ul class="mt-5 text-white font-bold ">
+                            <p class="font-bold" style="color:#33006F !important">Not Returned Books : </p>
+                            {% for record in context.notreturnedbooks %}
+                            <div class="mt-5 flex flex-row items-center gap-5">
+                                    <!-- Not Returned Books title and due_date  -->
+                                    <li>{{ record.book.title }} - Due: {{ record.due_date }} {% if not record.returned_at %}(Not Returned){% endif %}
+                                    <!-- Due date Updation  -->
+                                    <form action="{% url 'boipoka_app:update_due_date' record.pk %}" method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="datetime-local" name="due_date"  required>
+                                        <button type="submit" class="ml-2 px-2 py-1 bg-slate-700 text-white font-semibold">Update Due Date</button>
+                                    </form>
+                                    <!-- Admin can sent Notification here for update_due_date  -->
+                                    <form action="{% url 'boipoka_app:send_borrowed_notifications' context.user.pk %}" method="post" >
+                                        {% csrf_token %}
+                                        <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                    </form>
+                                    </li>
+                            </div>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endif %}
+                <!-- IF this user have any Overdued Books    -->
+                {% if context.overdue_books %}
+                    <p class="mt-5 text-center font-bold">Overdue Books:</p>
+                    <ul class="mt-5 text-white font-bold ">
+                        {% for overdue in context.overdue_books %}
+                            <!-- Overdued books title and due_date   -->
+                            <li>{{ overdue.book.title }} - Due: {{ overdue.due_date }}</li>
+                            <!-- Admin can send Reminder for the Overdue Events  -->
+                            <form action="{% url 'boipoka_app:send_reminder' context.user.pk %}" method="post" >
+                                {% csrf_token %}
+                                <button type="submit" class="mt-5 px-3 py-2 bg-slate-700 text-white font-semibold">Send Reminder</button>
+                            </form>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <!-- If this user has requests for reissue granting among his borrowed books  -->
+                {% if context.reissue_requests %}
+                <p class="mt-5 text-center font-bold">Reissue requests</p>
+                <ul class="mt-5 text-white font-bold ">
+                    <div class="flex gap-5">
+                        {% for item in context.reissue_requests %}
+                            <!-- Reissued books titles and due_date  -->
+                            <li>{{ item.book.title }} - Due: {{ item.due_date }}</li>
+                            <!-- Admin the grant or accept this reissue request .Upon accetpting it will relection in the user end session of book_details and book_list-->
+                            <form action="{% url 'boipoka_app:reissue_grant' item.pk %}" method="post">
+                                {% csrf_token %}
+                                <button type=submit class="px-3 py-2 text-white" style="background-color:#1DB954 !important;">Accept</button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                </ul>
+                {% endif %}
+                <!-- If the user has reported any damaged/lost book   -->
+                {% if context.damaged_books or context.damaged_history  %}
+                    <p class="mt-5 text-center font-bold">Damaged/Lost Books</p>
+                    <ul class=" gap-5 mt-5 text-white font-bold ">
+                    <!-- If the damaged/lost books borrowing instances are not deleted by admin  -->
+                        {% for item in context.damaged_books %}
+                            <!-- If the user has reported any damaged/lost book  and not deleted from borrowing instances -->
+                            <div class="mt-5  flex flex-row gap-2" >
+                                <!--Show the reported book title,paid details  -->
+                                <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
+                                <!--Checking If the fine paid for the reported  -->
+                                {% if item.fine_paid %}
+                                    <div>
+                                        <!--Checking If the fine paid for reported book is approved by Admin-->
+                                        {% if item.fine_paid_approved %}
+                                            <div class="flex gap-2">
+                                                <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                            <!-- Admin can sent Notifications for approving the fine paid by the user  -->
+                                                <form action="{% url 'boipoka_app:send_payment_approval' context.user.pk %}" method="post" >
+                                                    {% csrf_token %}
+                                                    <button type="submit" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Send Notification</button>
+                                                </form>
+                                            </div>
+                                        <!-- If the fine paid is not approved then this approve button will help Admin to mark this payment as approved -->
+                                        {% else %}
+                                            <form action="{% url 'boipoka_app:manage_fineapprove' item.pk %}" method="post">
+                                                {% csrf_token %}
+                                                <button type=submit class="px-3 py-2 text-white" style="background-color:#452c63 !important;">Approve</button>
+                                            </form>
+                                        {% endif %} 
+                                    </div>
+                                <!-- If the user has not paid the fine the reported book -->
+                                {% else %}
+                                    <div>
+                                        <!-- Admin can sent reminder through email to the user from here for paying for this reportd book  -->
+                                        <form action="{% url 'boipoka_app:send_payment_needed' context.user.pk %}" method="post" >
+                                            {% csrf_token %}
+                                            <button type="submit" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Send Reminder</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <!-- If the user has reported any damaged/lost book  have been deleted from borrowing instances by Admin upon payment approval -->
+                        {% if context.damaged_history %}
+                            {% for item in context.damaged_history %}
+                                <div class="mt-5  flex flex-row gap-2" >
+                                    <li>{{ item.book.title }} {% if item.fine_paid %}(Paid on {{item.fine_paid_at}}) {% endif %}</li>
+                                    <div>
+                                        <strong class="font-bold" style="color:#FFD700 !important;">PAID</strong>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                {% endif %}
+                
+            {% else %}
+                <p>No Subscription</p>
+            {% endif %}
+            <!-- Admin can Delete or Edit User from here -->
+            <div class='mt-6 flex flex-row justify-between gap-4'>
+                <button><a href="{% url 'boipoka_app:edit_user' pk=context.user.pk %}" class=" px-3 py-2 bg-slate-700 text-white font-semibold">Edit User</a></button>
+                <form action="{% url 'boipoka_app:delete_user' pk=context.user.pk %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class=" px-3 py-2 bg-red-700 text-white font-semibold">Delete User</button>
+                </form>
+            </div>
+        </li>
+    {% endif %}
+</ul>
+<button class="mt-5 px-6 py-2 bg-slate-700 text-white font-semibold" ><a href="{% url 'boipoka_app:users' %}">Back to UserLists</a></button>
+{% endblock %}

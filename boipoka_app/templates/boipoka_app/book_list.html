@@ -1,0 +1,156 @@
+{% extends 'boipoka_app/base.html' %}
+{% load book_filters %}
+
+{% block title %}Available Books{% endblock %}
+
+{% block content %}
+<!--Pop up messages for Some event happend some specific views from where it redirects to this book_list view-->
+{% if messages %}
+    <div id="popupModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-lg w-full">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h5 class="text-xl font-semibold">Attention</h5>
+                <button class="text-gray-500 hover:text-gray-700" onclick="closeModal()">
+                    &times;
+                </button>
+            </div>
+            <div class="px-6 py-4">
+                {% for message in messages %}
+                    <p class="text-red-700">{{ message }}</p>
+                {% endfor %}
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function closeModal() {
+            document.getElementById('popupModal').style.display = 'none';
+        }
+    </script>
+{% endif %}
+
+<!--Making Book List Menu Available for Admin and Active Subscriber -->
+{% if request.user.subscription.is_active  or request.user.is_superuser %}
+    <h2 class="p-3 mt-20 mb-8 text-slate-300 text-center text-3xl">Available Books</h2>
+    <!--Books will be displayed for available books -->
+    {% if books %}
+        <div class="mt-10 w-full h-full rounded-3xl grid grid-cols-4 items-center text-slate-300 gap-3">
+            {% for book in books %}
+                <div class="flex flex-col justify-around items-center border-solid border-indigo-500">
+                    <div class="border-solid border-indigo-500">
+                        <!--Checking if book is available or user is Admin or not -->
+                        {% if book.available_copies or request.user.is_superuser %}
+                            <a href="{% url 'boipoka_app:book_details' book.id %}">
+                                <!-- If this book contains image    -->
+                                {% if book.image %}
+                                    <!-- If this book is borrowed and the user have only 1 day or left to return the book    -->
+                                    {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <!-- If the due date is nearer an Altet will be marked  along with image -->
+                                        <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
+                                        </sup>
+                                        <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    <!-- Otherwise only image   -->
+                                    {% else %}
+                                        <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56">
+                                    {% endif %}
+                                <!-- If this book have not any image  -->
+                                {% else %}
+                                    <!-- If this book is borrowed and the user have only 1 day or left to return the book    -->
+                                    {% if borrowedornot|get_item:book.pk and book_due_near|get_item:book.pk %}
+                                        <!-- If the due date is nearer an Altet will be marked  along with image -->
+                                        <sup class="font-bold text-xl" style="color:white !important;background-color:red !important;border-radius:25% !important;">Alert!
+                                        </sup>
+                                        <img src="" alt="{{ book.title }}" class="w-56 h-56">
+                                    <!-- Otherwise only image   -->
+                                    {% else %}
+                                        <img src="" alt="No image available" class="w-56 h-56">
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        <!-- If the user is not Admin or  the available_copies is 0 then one can't click on the image to go to details -->
+                        {% else %}
+                            <img src="{{ book.image.url }}" alt="{{ book.title }}" class="w-56 h-56 opacity-50" disabled>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-dark mx-20 text-xl">{{ book.title }}</h1>
+                    </div>
+                    <div>
+                        <p class="text-dark mx-20">{{ book.author }}</p>
+                    </div>
+                    <!--If  a particular is not available to borrow for a particular user having subscription -->
+                    {% if not book_availability|get_item:book.pk and not request.user.is_superuser and request.user.subscription and borrowedornot|get_item:book.pk %}
+                        <div class="flex flex-row items-center justify-between gap-2">
+                            <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Not Available</p>
+                            <!--Checking if the book is reported by user to admin -->
+                            {% if isreported|get_item:book.pk %}
+                                <!--If the reported book is paid by User -->
+                                {% if paidlist|get_item:book.pk %}
+                                    <p class="text-white" style="background-color:#4B5320 !important">Wait for Approval.</p>
+                                <!--Otherwise you have to pay for  it -->
+                                {% else %}
+                                    <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-4 py-3  text-white " style="background-color:#3CB371 !important">Pay Now</a></p>
+                                {% endif %}
+                            <!--Otherwise the user will have a return book option here -->
+                            {% else %}
+                                <form action="{% url 'boipoka_app:return_book' book.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-2 bg-orange-500 text-white">Return Book</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <!--Showing number of remaining books or Out of Stock -->
+                    <div>
+                        {% if book.available_copies > 0 %}
+                            <p class="rounded font-bold text-dark bg-green-950 p-2 text-center">Remaining - {{ book.available_copies }}</p>
+                        {% else %}
+                            <p class="rounded font-bold text-white bg-red-700 p-2 text-center">Out of Stock</p>
+                        {% endif %}
+                    </div>
+                    <!--If a particular book is borrowed by the logged in user  -->
+                    {% if borrow_info|get_item:book.pk %}
+                        <!--After the report_lost_or_damaged is sent by user to Admin -->
+                        {% if isreported|get_item:book.pk %}
+                            <p class="rounded font-bold text-white p-2 text-center" style="background-color:#32CD32 !important">Report has been sent to Admin</p>
+                        <!--Otherwise the report has not made and the user can have report option -->
+                        {% else %}
+                            <div class="flex flex-row items-center justify-between gap-2">
+                                <form action="{% url 'boipoka_app:report_lost_or_damaged' book.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-2 bg-red-600 text-white">Report Lost/Damaged</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div> 
+    <!--Otherwise No book is available -->
+    {% else %}
+        <p>No books available at the moment.</p>
+    {% endif %}
+<!--Otherwise Suspended Menu wil be displayed -->
+{% else %}
+    <div class="text-4xl mt-16 pt-20 flex items-center justify-center gap-2 text-white p-4 rounded-lg h-screen">
+        <p class="">Your account has been suspended due to late payment of fines or unpaid status for  lost/damaged reports. Please resolve any outstanding fines to reactivate your account.</p>
+        {% for book in books %}
+            <div class="flex flex-col items-center gap-2">
+                <!--Checking if a reported book contains -->
+                {% if isreported|get_item:book.pk %}
+                    <p class="mb-5 text-white">{{book.title}} </p>
+                    <!--Checking if the fine is paid for it -->
+                    {% if paidlist|get_item:book.pk %}
+                    <p class="text-orange-600">Your payment has been received! Your account will be reactivated upon admin approval.</p>
+                    <!--Otherwise you have to pay for it -->
+                    {% else %}  
+                        <p><a href="{% url 'boipoka_app:manage_fines' book.pk %}" class="mt-10 px-3 py-3  text-white" style="background-color:#3CB371 !important">Pay Now</a></p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

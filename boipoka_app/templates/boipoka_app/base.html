@@ -1,0 +1,77 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% tailwind_css %}
+    <title>{% block title %}boipoka{% endblock %}</title>
+    {% comment %} <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous"> {% endcomment %}
+    {% comment %} <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet"> {% endcomment %}
+    {% comment %} <script src="https://cdn.tailwindcss.com"></script> {% endcomment %}
+</head>
+{% comment %} 
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> {% endcomment %}
+
+
+
+
+{% load tz %}
+{% load parse_datetime %}
+<nav class="-mt-20 fixed  flex items-center w-full px-5 py-5 text-xl text-slate-200  gap-3 justify-center bg-slate-500">
+    <button  class="font-bold py-2 px-8 text-white hover:text-indigo-950 "><a href="{% url 'boipoka_app:book_list' %}">Home</a></button>
+    {% if request.user.subscription.is_active %}
+        {% with subscription=request.user.subscription %}
+            {% timezone "Asia/Dhaka" %}
+            {% with subscription_endtime=request.user.subscription.subscription_end %}
+                {% with subscription_status=subscription_endtime|parse_datetime:"%b. %d, %Y, %I:%M %p" %}
+                    {% if subscription_status %}
+                        <span class="text-indigo-950 font-bold">Your are a {{ request.user.subscription.subscription_type }} member</span>
+                        <span class="text-green-500 font-bold">Your subscription will end on {{ request.user.subscription.subscription_end }}</span>
+                        <button class="py-2 px-8 font-bold text-indigo-800 hover:text-indigo-950">
+                            <a href="{% url 'boipoka_app:change_subscription' %}?next={{ request.path }}">Change Subscription</a>
+                        </button>
+                    {% else %}
+                        <span class="text-red-500 font-bold">Your subscription has expired.</span>
+                        <button class="py-2 px-8 font-bold text-indigo-800 hover:text-indigo-950">
+                            <a href="{% url 'boipoka_app:renew_subscription' %}">Renew Subscription</a>
+                        </button>
+                    {% endif %}
+                {% endwith %}   
+            {% endwith %}
+            {% endtimezone %}
+        {% endwith %} 
+    {% endif %}
+
+    {% if request.user.is_authenticated %} 
+        <form method="post" action="{% url 'boipoka_app:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-2 bg-purple-900 hover:bg-purple-700 rounded-xl text-white">Log Out</button>
+        </form>
+        {% if request.user.is_superuser %}
+        <button class=" px-6 py-2 bg-slate-700 text-white font-semibold">
+            <a href="{% url 'boipoka_app:add_book' %}">+Add a New Book</a>
+        </button>
+        <button class=" px-6 py-2 bg-cyan-800 text-white font-semibold">
+            <a href="{% url 'boipoka_app:users' %}">Handle User</a>
+        </button>
+        {% elif request.user.subscription.is_active %}
+        <button class=" px-6 py-2 bg-slate-700 text-white font-semibold">
+            <a href="{% url 'boipoka_app:reading_history' %}">ReadList History</a>
+        </button>
+        {% endif %}
+        {% if not request.user.is_superuser %}
+            <button class=" px-6 py-2 text-white font-bold" style="background-color:#FEBE10 !important;">
+                <a href="{% url 'boipoka_app:notifications' %}">Notifications{% if unread_notifications_count %}<sup class="px-3 py-2 font-bold" style="background-color:red !important;color:white !important;border-radius:100% !important;">{{unread_notifications_count}}</sup>{% endif %}</a>
+            </button>
+        {% endif %}
+    {% endif %}
+</nav>
+
+<body class='bg-gray-900 '>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>
